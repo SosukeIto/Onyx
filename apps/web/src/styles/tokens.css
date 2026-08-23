@@ -13,14 +13,20 @@
    ========================================================================== */
 
 :root {
+	/* The emoji families sit at the very end on purpose: Apple Color Emoji also
+	   ships glyphs for `#`, `*` and the digits (keycap sequences), so listing
+	   it early would turn plain numbers into emoji. Note bodies use emoji in
+	   headings (🧑 / 🤖 / ✅), and naming the family keeps their metrics
+	   predictable instead of leaving it to system fallback. */
 	--font-ui:
 		"M PLUS 1", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
 		system-ui, -apple-system, "Segoe UI", Roboto, "Yu Gothic UI", Meiryo,
-		sans-serif;
+		"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 	--font-text: var(--font-ui);
 	--font-code:
 		"M PLUS 1 Code", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-		"Hiragino Sans", monospace;
+		"Hiragino Sans", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+		monospace;
 
 	--fs-h1: 27px;
 	--fs-h2: 21px;

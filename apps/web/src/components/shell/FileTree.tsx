@@ -1,5 +1,5 @@
 import type { TreeFolder, TreeNode } from "@Onyx/vault";
-import { useCallback, useEffect, useState } from "react";
+import { type Ref, useCallback, useEffect, useRef, useState } from "react";
 
 import { IconChevron, IconFolder, IconNote } from "@/components/icons";
 import { cx } from "@/lib/cx";
@@ -12,6 +12,8 @@ export interface FileTreeProps {
 	onOpen?: (path: string) => void;
 	/** Folder paths expanded on first render, on top of `activePath`'s ancestors. */
 	defaultOpen?: readonly string[];
+	/** Scroll the active row into view when it changes. On by default. */
+	revealActive?: boolean;
 	className?: string;
 }
 
@@ -42,6 +44,8 @@ interface NodeProps {
 	expanded: Set<string>;
 	onToggle: (path: string) => void;
 	onOpen?: (path: string) => void;
+	/** Attached to the active file row so the tree can scroll it into view. */
+	activeRef?: Ref<HTMLButtonElement>;
 }
 
 function Node({
@@ -51,6 +55,7 @@ function Node({
 	expanded,
 	onToggle,
 	onOpen,
+	activeRef,
 }: NodeProps) {
 	if (node.kind === "file") {
 		const active = node.path === activePath;
@@ -62,6 +67,7 @@ function Node({
 					active && "bg-brand-soft font-medium text-brand hover:bg-brand-soft",
 				)}
 				onClick={() => onOpen?.(node.path)}
+				ref={active ? activeRef : undefined}
 				style={indent(depth)}
 				title={node.path}
 				type="button"
@@ -112,10 +118,13 @@ function Node({
 					</span>
 				) : null}
 			</button>
+			{/* A collapsed folder renders no rows at all — with ~250 notes in the
+			    vault only the open branches ever reach the DOM. */}
 			{open
 				? node.children.map((child) => (
 						<Node
 							activePath={activePath}
+							activeRef={activeRef}
 							depth={depth + 1}
 							expanded={expanded}
 							key={child.path}
@@ -138,11 +147,13 @@ export function FileTree({
 	activePath,
 	onOpen,
 	defaultOpen,
+	revealActive = true,
 	className,
 }: FileTreeProps) {
 	const [expanded, setExpanded] = useState<Set<string>>(
 		() => new Set(defaultOpen ?? []),
 	);
+	const activeRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (!activePath) {
@@ -160,6 +171,15 @@ export function FileTree({
 			return changed ? next : prev;
 		});
 	}, [activePath]);
+
+	// `nearest` never moves the panel when the row is already visible.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `expanded` is the trigger, not a value — the active row only mounts once the effect above has opened its ancestors
+	useEffect(() => {
+		if (!revealActive || !activePath) {
+			return;
+		}
+		activeRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+	}, [activePath, expanded, revealActive]);
 
 	const onToggle = useCallback((path: string) => {
 		setExpanded((prev) => {
@@ -180,6 +200,7 @@ export function FileTree({
 			{tree.children.map((child) => (
 				<Node
 					activePath={activePath}
+					activeRef={activeRef}
 					depth={0}
 					expanded={expanded}
 					key={child.path}

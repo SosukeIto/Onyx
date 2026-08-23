@@ -11,6 +11,14 @@ export interface PanelSectionProps {
 	count?: number;
 	/** Extra control in the section header (e.g. a "new note" button). */
 	action?: ReactNode;
+	/**
+	 * Render nothing at all when the section has no data — an icon with a `0`
+	 * next to it is noise. Emptiness comes from `empty`, or from `count === 0`
+	 * when `empty` is not given.
+	 */
+	hideWhenEmpty?: boolean;
+	/** Overrides the `count === 0` guess used by `hideWhenEmpty`. */
+	empty?: boolean;
 	children: ReactNode;
 	className?: string;
 	bodyClassName?: string;
@@ -25,10 +33,16 @@ export function PanelSection({
 	label,
 	count,
 	action,
+	hideWhenEmpty,
+	empty,
 	children,
 	className,
 	bodyClassName,
 }: PanelSectionProps) {
+	if (hideWhenEmpty && (empty ?? count === 0)) {
+		return null;
+	}
+
 	return (
 		<section
 			className={cx(
@@ -47,7 +61,16 @@ export function PanelSection({
 						{count}
 					</span>
 				)}
-				{action}
+				{action ? (
+					<span
+						className={cx(
+							"flex items-center",
+							count === undefined && "ml-auto",
+						)}
+					>
+						{action}
+					</span>
+				) : null}
 			</div>
 			<div className={cx("min-w-0 px-2 pb-3", bodyClassName)}>{children}</div>
 		</section>

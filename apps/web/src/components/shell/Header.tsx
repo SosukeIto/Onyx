@@ -48,9 +48,40 @@ export interface HeaderProps {
 		index: number,
 		isLast: boolean,
 	) => ReactNode;
+	/**
+	 * How many crumbs may stay on screen, the `…` placeholder included. Deep
+	 * paths lose their leading folders first; the file name is never dropped.
+	 */
+	maxSegments?: number;
 	sync?: SyncState;
 	/** Extra controls, inserted left of the theme toggle. */
 	actions?: ReactNode;
+}
+
+interface Crumb {
+	segment: BreadcrumbSegment;
+	/** Index in the original `segments`, so `renderSegment` stays addressable. */
+	index: number;
+}
+
+/**
+ * Keep the tail of the path — the file name matters most, its folder next.
+ * Everything in front is returned as `hidden` and collapses into one `…`.
+ */
+function collapseSegments(
+	segments: BreadcrumbSegment[],
+	maxSegments: number,
+): { crumbs: Crumb[]; hidden: BreadcrumbSegment[] } {
+	const all = segments.map((segment, index) => ({ index, segment }));
+	if (segments.length <= maxSegments) {
+		return { crumbs: all, hidden: [] };
+	}
+	// One slot goes to the `…` placeholder.
+	const keep = Math.max(1, maxSegments - 1);
+	return {
+		crumbs: all.slice(all.length - keep),
+		hidden: segments.slice(0, segments.length - keep),
+	};
 }
 
 function syncDotClass(sync: SyncState): string {
@@ -86,6 +117,7 @@ export function Header({
 	onForward,
 	segments = [],
 	renderSegment,
+	maxSegments = 3,
 	sync = {},
 	actions,
 }: HeaderProps) {
@@ -111,6 +143,7 @@ export function Header({
 	}, [canGoBack, canGoForward, onBack, onForward]);
 
 	const tooltip = syncTooltip(sync);
+	const { crumbs, hidden } = collapseSegments(segments, maxSegments);
 
 	return (
 		<header className="relative z-30 flex h-[var(--h-header)] min-w-0 flex-none items-center gap-3 border-line border-b bg-panel pr-[max(12px,env(safe-area-inset-right))] pl-[max(12px,env(safe-area-inset-left))] max-sm:gap-0.5">
@@ -164,7 +197,23 @@ export function Header({
 				aria-label="開いているファイルのパス"
 				className="flex min-w-0 flex-1 items-center gap-0.5 text-ink-muted text-meta"
 			>
-				{segments.map((segment, index) => {
+				{hidden.length > 0 ? (
+					<Fragment key="onyx-crumb-ellipsis">
+						<IconChevron
+							className="flex-none text-ink-faint max-sm:hidden"
+							size={14}
+							strokeWidth={1.6}
+						/>
+						<span
+							className="flex-none text-ink-faint max-sm:hidden"
+							title={hidden.map((s) => s.label).join("/")}
+						>
+							…
+						</span>
+					</Fragment>
+				) : null}
+
+				{crumbs.map(({ segment, index }) => {
 					const isLast = index === segments.length - 1;
 					const key = segments
 						.slice(0, index + 1)

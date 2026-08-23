@@ -72,7 +72,12 @@ export function NoteBody({
 		return () => root.removeEventListener("click", onClick);
 	}, [onLinkClick, onTagClick]);
 
-	// Images arrive as plain <img> from the renderer; make them cheap to load.
+	// The renderer emits bare <img> and bare <table>. Normalise both here:
+	// images get lazy loading, and every table is put inside the `.table-wrap`
+	// scroller prose.css styles — a `display: block` table shrinks its columns
+	// to fit instead of scrolling, which squeezes Japanese text to 1–2 glyphs.
+	// React owns this subtree through `dangerouslySetInnerHTML`, so it replaces
+	// the whole thing whenever `html` changes and never sees these nodes.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the DOM is rebuilt whenever `html` changes
 	useEffect(() => {
 		const root = ref.current;
@@ -82,6 +87,15 @@ export function NoteBody({
 		for (const img of root.querySelectorAll("img")) {
 			img.loading = "lazy";
 			img.decoding = "async";
+		}
+		for (const table of root.querySelectorAll("table")) {
+			if (table.parentElement?.classList.contains("table-wrap")) {
+				continue;
+			}
+			const wrap = document.createElement("div");
+			wrap.className = "table-wrap";
+			table.replaceWith(wrap);
+			wrap.append(table);
 		}
 	}, [html]);
 

@@ -73,7 +73,7 @@ import { IconFolder, IconNote } from "@/components/icons";
 | `IconKey` | `i-key` | session_id / 識別子 | frontmatter の session_id・id・uid |
 | `IconGit` | `i-git` | blob ハッシュ / GitHub オブジェクト | NoteInfo の commit、Header の同期 tooltip |
 | `IconSync` | `i-sync` | GitHub 同期状態 | Header の同期ドット |
-| `IconInfo` | `i-info` | プロパティ / ファイル情報 / 統計 / note callout | frontmatter の見出し、NoteInfo、未知の frontmatter キー |
+| `IconInfo` | `i-info` | プロパティ / ファイル情報 / 統計 / note callout | frontmatter の見出し、NoteInfo、未知の frontmatter キー、RightPanel の空状態 |
 
 ## 機能
 
@@ -81,7 +81,7 @@ import { IconFolder, IconNote } from "@/components/icons";
 | --- | --- | --- | --- |
 | `IconSearch` | `i-search` | 検索 | Rail・LeftPanel の検索ボタン |
 | `IconList` | `i-list` | アウトライン | RightPanel のアウトラインセクション |
-| `IconGraph` | `i-graph` | グラフビュー / 選択中のノード | Rail・TabBar のグラフ |
+| `IconGraph` | `i-graph` | グラフビュー / 選択中のノード / ローカルグラフ | Rail・TabBar のグラフ、RightPanel のローカルグラフボタン |
 | `IconFilter` | `i-filter` | フィルタ | 検索画面のファセット |
 | `IconSliders` | `i-sliders` | 設定 / 表示の調整 | Rail・TabBar の設定 |
 | `IconSort` | `i-sort` | 並び順 | 検索結果のソート |

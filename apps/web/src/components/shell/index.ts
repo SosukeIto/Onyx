@@ -5,6 +5,11 @@ export {
 	useAppShell,
 } from "./AppShell";
 export { type BacklinkItem, Backlinks, type BacklinksProps } from "./Backlinks";
+export {
+	EmptyState,
+	type EmptyStateProps,
+	type EmptyStateTone,
+} from "./EmptyState";
 export { FileTree, type FileTreeProps } from "./FileTree";
 export {
 	type BreadcrumbSegment,

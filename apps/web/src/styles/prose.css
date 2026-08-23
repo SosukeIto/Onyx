@@ -15,6 +15,7 @@
      mark                               ==highlight==
      img                                embedded image (lazy, max-width 100%)
      .table-wrap > table                horizontally scrollable table
+                                        (NoteBody wraps bare <table> in one)
      .katex / .katex-display            KaTeX math
 
    Everything is unlayered on purpose so it beats Tailwind's preflight without
@@ -49,6 +50,11 @@
 }
 
 /* ---------------------------------------------------------------- headings */
+/* `--lh-head` is a unitless number, so it is the used line-height for every
+   inline box in the heading — including the emoji runs the Claude logs start
+   their h2/h3 with (🧑 / 🤖 / ✅). Without it the emoji font's own metrics
+   would set the line box and headings would jump around. Never replace it
+   with `normal`. */
 .prose-onyx h1,
 .prose-onyx h2,
 .prose-onyx h3,
@@ -176,13 +182,27 @@
 .prose-onyx li:has(> input[type="checkbox"]) {
 	list-style: none;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-start;
-	gap: 9px;
+	gap: 0 9px;
 	padding: 3px 0;
 	margin: 0;
 	line-height: 1.75;
 }
 
+/* A nested list under a task takes its own row instead of sitting beside the
+   task's text (the item is a flex container). */
+.prose-onyx li.task-list-item > :is(ul, ol),
+.prose-onyx li:has(> input[type="checkbox"]) > :is(ul, ol) {
+	flex: 0 0 100%;
+	margin: 0.15em 0 0.2em;
+	padding-left: 1.6em;
+}
+
+/* remark-gfm renders every task as `<input type="checkbox" disabled>` (plus
+   `checked`), so the box is never interactive — it is a glyph, and it is
+   styled like Obsidian's: hollow when open, accent-filled with a light tick
+   when done. `[disabled]` must not grey it out. */
 .prose-onyx input[type="checkbox"] {
 	appearance: none;
 	-webkit-appearance: none;
@@ -195,8 +215,11 @@
 	border: 1.5px solid var(--border-strong);
 	border-radius: var(--r-sm);
 	background: var(--bg-elev);
+	/* Safari dims and greys disabled inputs even with `appearance: none`. */
 	opacity: 1;
+	color: inherit;
 	cursor: default;
+	pointer-events: none;
 }
 
 .prose-onyx input[type="checkbox"]:checked {
@@ -272,8 +295,13 @@
 	border-radius: var(--r-lg);
 }
 
+/* Fallback for a bare <table>: the renderer emits one, and `NoteBody` moves it
+   into `.table-wrap` on the client. Before that (and without JS) `display:
+   block` at least makes the table its own scroller — but an unwrapped table
+   shrinks its columns to the reading measure first and only scrolls once the
+   `nowrap` headers no longer fit, so the wrapper is what gives Obsidian's
+   "table keeps its natural width and scrolls" behaviour. */
 .prose-onyx table {
-	/* fallback when the renderer emits a bare <table> with no .table-wrap */
 	display: block;
 	max-width: 100%;
 	margin: 0 0 1.2em;
@@ -514,9 +542,25 @@
 	margin-bottom: 0;
 }
 
-.prose-onyx blockquote.callout p {
+/* `:not(.callout-title)` is load-bearing: `.prose-onyx blockquote.callout p`
+   outweighs `.prose-onyx .callout-title`, so without it the title would take
+   this font-size and line-height and stop lining up with its 17px glyph. */
+.prose-onyx blockquote.callout p:not(.callout-title) {
 	font-size: 15.5px;
 	line-height: 1.8;
+}
+
+/* Tighter than a body paragraph — a callout is one small block. `:not(:last-
+   child)` keeps `blockquote.callout > :last-child { margin-bottom: 0 }` in
+   force: these selectors are more specific and would otherwise re-add the
+   gap above the callout's bottom padding. */
+.prose-onyx
+	blockquote.callout
+	:is(p, ul, ol, pre, blockquote, .table-wrap):not(
+		:last-child,
+		.callout-title
+	) {
+	margin-bottom: 0.75em;
 }
 
 /* ------------------------------------------------------------------- embed */

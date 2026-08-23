@@ -12,6 +12,10 @@ export interface LeftPanelProps {
 	onOpen?: (path: string) => void;
 	/** Opens the search screen. Rendered as an icon button, never a text field. */
 	onSearch?: () => void;
+	/**
+	 * Creates a note. Onyx is a read-only viewer, so the button only exists
+	 * when a handler is passed — otherwise nothing is rendered for it.
+	 */
 	onNewNote?: () => void;
 	/** Total note count shown next to the folder glyph. */
 	noteCount?: number;
@@ -46,14 +50,16 @@ export function LeftPanel({
 					<IconSearch size={18} />
 				</IconButton>
 				<span aria-hidden="true" className="flex-1" />
-				<IconButton
-					className="size-8"
-					label="新規ノート"
-					onClick={onNewNote}
-					title="新規ノート"
-				>
-					<IconNewNote size={18} />
-				</IconButton>
+				{onNewNote ? (
+					<IconButton
+						className="size-8"
+						label="新規ノート"
+						onClick={onNewNote}
+						title="新規ノート"
+					>
+						<IconNewNote size={18} />
+					</IconButton>
+				) : null}
 			</div>
 
 			{children}
