@@ -1,7 +1,12 @@
 import type { TreeFolder } from "@Onyx/vault";
 import type { ReactNode } from "react";
 
-import { IconFolder, IconNewNote, IconSearch } from "@/components/icons";
+import {
+	IconFolder,
+	IconNewNote,
+	IconSearch,
+	IconSliders,
+} from "@/components/icons";
 
 import { FileTree } from "./FileTree";
 import { IconButton } from "./IconButton";
@@ -17,6 +22,12 @@ export interface LeftPanelProps {
 	 * when a handler is passed — otherwise nothing is rendered for it.
 	 */
 	onNewNote?: () => void;
+	/**
+	 * Opens the settings screen. Phone only: from `sm` up the rail carries the
+	 * same target, and the drawer is where a phone reaches everything the tab
+	 * bar has no room for. Nothing is rendered without a handler.
+	 */
+	onSettings?: () => void;
 	/** Total note count shown next to the folder glyph. */
 	noteCount?: number;
 	defaultOpen?: readonly string[];
@@ -34,6 +45,7 @@ export function LeftPanel({
 	onOpen,
 	onSearch,
 	onNewNote,
+	onSettings,
 	noteCount,
 	defaultOpen,
 	children,
@@ -60,9 +72,26 @@ export function LeftPanel({
 						<IconNewNote size={18} />
 					</IconButton>
 				) : null}
+				{onSettings ? (
+					<IconButton
+						className="size-8 sm:hidden"
+						label="設定"
+						onClick={onSettings}
+						title="設定"
+					>
+						<IconSliders size={18} />
+					</IconButton>
+				) : null}
 			</div>
 
-			{children}
+			{/*
+			 * Calendar / facets / graph controls / project list. The rule below
+			 * the slot separates it from the tree; `:not(:empty)` keeps it off
+			 * the screens that put nothing here.
+			 */}
+			<div className="flex min-h-0 min-w-0 shrink flex-col [&>*:not(:empty)]:border-line [&>*:not(:empty)]:border-b">
+				{children}
+			</div>
 
 			<div
 				className="flex h-[34px] flex-none items-center gap-2 px-3 text-ink-muted"

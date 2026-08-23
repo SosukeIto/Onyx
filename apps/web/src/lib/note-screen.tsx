@@ -2,7 +2,7 @@ import type { NoteDetail } from "@Onyx/api/schemas";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
-import { NoteView } from "@/components/note";
+import { NoteActions, NoteView } from "@/components/note";
 
 import { stripMd } from "./paths";
 
@@ -74,7 +74,20 @@ export function NoteScreen({ detail, header }: NoteScreenProps) {
 		<div className="contents" ref={ref}>
 			<NoteView
 				frontmatter={detail.frontmatter}
-				header={header}
+				header={
+					<>
+						<NoteActions
+							className="mb-4"
+							onOpenGraph={() => {
+								void navigate({
+									search: { center: detail.path },
+									to: "/graph",
+								});
+							}}
+						/>
+						{header}
+					</>
+				}
 				html={detail.html}
 				onLinkClick={openNote}
 				onTagClick={openTag}

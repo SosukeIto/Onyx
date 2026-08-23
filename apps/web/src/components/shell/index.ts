@@ -25,6 +25,7 @@ export {
 	NAV_ICON,
 	NAV_LABEL,
 	NAV_ORDER,
+	NAV_PHONE,
 	type NavKey,
 	type NavProps,
 	type NavRenderArgs,

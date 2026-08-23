@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { z } from "zod";
 
-import { IconFolder, IconNote } from "@/components/icons";
+import { IconChat, IconFolder } from "@/components/icons";
 import { NoteList } from "@/components/list";
 import Loader from "@/components/loader";
 import { ScreenScroll } from "@/lib/list";
@@ -81,7 +81,7 @@ function LogsRoute() {
 			<ScreenScroll>
 				<NoteList
 					items={items}
-					leading={() => <IconNote size={15} strokeWidth={1.6} />}
+					leading={() => <IconChat size={15} strokeWidth={1.6} />}
 					onOpen={(path) => {
 						void navigate({ params: { _splat: stripMd(path) }, to: "/note/$" });
 					}}

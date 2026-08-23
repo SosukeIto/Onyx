@@ -1,17 +1,20 @@
 import { cx } from "@/lib/cx";
 import { NavButton } from "./NavButton";
-import { NAV_ORDER, type NavProps } from "./nav";
+import { NAV_PHONE, type NavProps } from "./nav";
 
 /**
  * Bottom navigation, phone only (`sm:hidden`). It is a normal flex row at the
  * end of the shell column, so nothing has to reserve space for it; the home
  * indicator is handled with `env(safe-area-inset-bottom)`.
+ *
+ * Defaults to `NAV_PHONE` — five targets, the most a phone bar can hold at a
+ * comfortable hit size. `settings` is therefore not here; see `nav.ts`.
  */
 export function TabBar({
 	active,
 	onSelect,
 	hrefs,
-	items = NAV_ORDER,
+	items = NAV_PHONE,
 	renderItem,
 	className,
 }: NavProps) {

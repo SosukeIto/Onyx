@@ -55,6 +55,7 @@ export interface RouterAppContext {
 const NAV_TO = {
 	daily: "/daily",
 	graph: "/graph",
+	logs: "/logs",
 	notes: "/",
 	search: "/search",
 	settings: "/settings",
@@ -173,6 +174,10 @@ function AppLeftPanel() {
 				closeDrawer();
 				void navigate({ to: "/search" });
 			}}
+			onSettings={() => {
+				closeDrawer();
+				void navigate({ to: "/settings" });
+			}}
 			tree={tree.data}
 		>
 			{/* Calendar (/daily), facets (/search), graph controls (/graph). */}
@@ -215,6 +220,10 @@ function NoteRightPanel() {
 					.getElementById(slug)
 					?.scrollIntoView({ behavior: "smooth", block: "start" });
 			}}
+			onOpenGraph={() => {
+				closeOverlay();
+				void navigate({ search: { center: detail.path }, to: "/graph" });
+			}}
 			onUnresolvedSelect={() => {
 				closeOverlay();
 				void navigate({ to: "/unresolved" });
@@ -251,7 +260,7 @@ function useSearchShortcut() {
 			event.preventDefault();
 			void navigate({ to: "/search" }).then(() => {
 				document
-					.querySelector<HTMLInputElement>('input[type="search"]')
+					.querySelector<HTMLInputElement>("input[data-onyx-search]")
 					?.focus();
 			});
 		}

@@ -33,6 +33,9 @@ export function navKeyFor(pathname: string): NavKey {
 	if (pathname === "/graph" || pathname.startsWith("/graph/")) {
 		return "graph";
 	}
+	if (pathname === "/logs" || pathname.startsWith("/logs/")) {
+		return "logs";
+	}
 	if (pathname === "/settings" || pathname.startsWith("/settings/")) {
 		return "settings";
 	}

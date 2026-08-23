@@ -51,6 +51,7 @@ import { IconFolder, IconNote } from "@/components/icons";
 | アイコン | demo の symbol | 意味 | 使う場所 |
 | --- | --- | --- | --- |
 | `IconNote` | `i-note` | ノート（.md ファイル） | FileTree のファイル行、検索結果、バックリンク |
+| `IconChat` | `—` | Claude の会話ログ（1 セッション） | Rail / TabBar の `/logs`、ログ一覧の行 |
 | `IconFolder` | `i-folder` | フォルダ / パス | FileTree のフォルダ行、NoteInfo のパス、バックリンクの出所 |
 | `IconNewNote` | `i-newnote` | 新規ノート | LeftPanel のヘッダー |
 | `IconTemplate` | `i-template` | テンプレート | 98_templates 配下、frontmatter の template キー |
@@ -72,6 +73,7 @@ import { IconFolder, IconNote } from "@/components/icons";
 | `IconClock` | `i-clock` | created / 更新日時 / 最近 | frontmatter の created・updated、NoteInfo の更新日時 |
 | `IconKey` | `i-key` | session_id / 識別子 | frontmatter の session_id・id・uid |
 | `IconGit` | `i-git` | blob ハッシュ / GitHub オブジェクト | NoteInfo の commit、Header の同期 tooltip |
+| `IconBranch` | `—` | ブランチ名 | 同期元のブランチ表示（commit / blob の `IconGit` とは分ける） |
 | `IconSync` | `i-sync` | GitHub 同期状態 | Header の同期ドット |
 | `IconInfo` | `i-info` | プロパティ / ファイル情報 / 統計 / note callout | frontmatter の見出し、NoteInfo、未知の frontmatter キー、RightPanel の空状態 |
 

@@ -79,7 +79,8 @@ export function RightPanel({
 		outlineCount === 0 &&
 		backlinkCount === 0 &&
 		unresolvedCount === 0 &&
-		!infoShown
+		!infoShown &&
+		!onOpenGraph
 	) {
 		return <EmptyState icon={IconInfo} />;
 	}
@@ -131,12 +132,14 @@ export function RightPanel({
 					) : null
 				}
 				bodyClassName="px-1"
-				empty={!infoShown}
+				// The local-graph button lives in this header, so the section has
+				// to survive a note with no file facts at all.
+				empty={!infoShown && !onOpenGraph}
 				hideWhenEmpty
 				icon={<IconInfo {...glyph} />}
 				label="ファイル情報"
 			>
-				<NoteInfo {...info} />
+				{infoShown ? <NoteInfo {...info} /> : null}
 			</PanelSection>
 		</div>
 	);

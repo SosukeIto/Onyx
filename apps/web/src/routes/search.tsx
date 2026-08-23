@@ -46,6 +46,10 @@ function SearchFacetsPanel({ folder, tag }: { folder?: string; tag?: string }) {
 	return (
 		<SearchFacets
 			folders={folders}
+			onOpenTags={() => {
+				closeDrawer();
+				void navigate({ to: "/tags" });
+			}}
 			onChange={(selection) => {
 				closeDrawer();
 				void navigate({

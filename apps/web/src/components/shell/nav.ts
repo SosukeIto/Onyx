@@ -2,6 +2,7 @@ import type { ComponentType, ReactNode } from "react";
 
 import {
 	IconCalendar,
+	IconChat,
 	IconGraph,
 	IconNote,
 	type IconProps,
@@ -9,15 +10,35 @@ import {
 	IconSliders,
 } from "@/components/icons";
 
-export type NavKey = "notes" | "daily" | "search" | "graph" | "settings";
+export type NavKey =
+	| "notes"
+	| "daily"
+	| "logs"
+	| "search"
+	| "graph"
+	| "settings";
 
-/** Order used by both `Rail` (vertical) and `TabBar` (phone). */
+/** Full order, used by `Rail` (vertical). */
 export const NAV_ORDER: readonly NavKey[] = [
 	"notes",
 	"daily",
+	"logs",
 	"search",
 	"graph",
 	"settings",
+];
+
+/**
+ * Phone order, used by `TabBar`. A bottom bar holds five targets before the
+ * hit areas get too narrow, so `settings` is dropped here — it lives in the
+ * rail from `sm` up, and in the file drawer on the phone (`LeftPanel`).
+ */
+export const NAV_PHONE: readonly NavKey[] = [
+	"notes",
+	"daily",
+	"logs",
+	"search",
+	"graph",
 ];
 
 /** `settings` sits after the spacer at the bottom of the rail. */
@@ -26,6 +47,7 @@ export const NAV_FOOTER: readonly NavKey[] = ["settings"];
 export const NAV_ICON: Record<NavKey, ComponentType<IconProps>> = {
 	notes: IconNote,
 	daily: IconCalendar,
+	logs: IconChat,
 	search: IconSearch,
 	graph: IconGraph,
 	settings: IconSliders,
@@ -35,6 +57,7 @@ export const NAV_ICON: Record<NavKey, ComponentType<IconProps>> = {
 export const NAV_LABEL: Record<NavKey, string> = {
 	notes: "ノート",
 	daily: "デイリーノート",
+	logs: "Claude の会話ログ",
 	search: "検索",
 	graph: "グラフビュー",
 	settings: "設定",

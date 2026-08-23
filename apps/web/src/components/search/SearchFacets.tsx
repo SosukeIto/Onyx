@@ -36,6 +36,13 @@ export interface SearchFacetsProps {
 	selectedMonth?: string;
 	/** Receives the whole next selection; clicking an active facet clears it. */
 	onChange?: (selection: FacetSelection) => void;
+	/**
+	 * Opens the tag index (`/tags`). Wired to the tag section's own glyph — the
+	 * heading is the only thing in the section that is not a filter, so it is
+	 * the one place a "see them all" target can live without adding wording.
+	 * Without a handler the glyph stays a plain icon.
+	 */
+	onOpenTags?: () => void;
 	className?: string;
 }
 
@@ -91,6 +98,7 @@ export function SearchFacets({
 	selectedTag,
 	selectedMonth,
 	onChange,
+	onOpenTags,
 	className,
 }: SearchFacetsProps) {
 	const current: FacetSelection = {
@@ -130,7 +138,21 @@ export function SearchFacets({
 
 			{tags && tags.length > 0 ? (
 				<PanelSection
-					icon={<IconHash size={16} strokeWidth={1.6} />}
+					icon={
+						onOpenTags ? (
+							<button
+								aria-label="すべてのタグ"
+								className="-m-1 grid flex-none place-items-center rounded-md p-1 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
+								onClick={onOpenTags}
+								title="すべてのタグ"
+								type="button"
+							>
+								<IconHash size={16} strokeWidth={1.6} />
+							</button>
+						) : (
+							<IconHash size={16} strokeWidth={1.6} />
+						)
+					}
 					label="タグで絞り込む"
 				>
 					{tags.map((tag) => (

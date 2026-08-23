@@ -1,4 +1,10 @@
-import { type KeyboardEvent, useEffect, useRef } from "react";
+import {
+	type KeyboardEvent,
+	type Ref,
+	useCallback,
+	useEffect,
+	useRef,
+} from "react";
 
 import {
 	IconCase,
@@ -24,8 +30,18 @@ export interface SearchInputProps {
 	/** Fired on Enter. */
 	onSubmit?: (value: string) => void;
 	autoFocus?: boolean;
+	/**
+	 * Case / regex / fulltext toggles. The option row is rendered only when the
+	 * screen actually owns that state — a field with no `options` and no
+	 * `onOptionsChange` shows the input alone.
+	 */
 	options?: SearchOptions;
 	onOptionsChange?: (options: SearchOptions) => void;
+	/**
+	 * Forwarded to the `<input>`. ⌘K uses it (or the `data-onyx-search`
+	 * attribute the field carries) to put the caret back in the box.
+	 */
+	inputRef?: Ref<HTMLInputElement>;
 	className?: string;
 }
 
@@ -53,15 +69,32 @@ export function SearchInput({
 	onChange,
 	onSubmit,
 	autoFocus,
-	options = DEFAULT_SEARCH_OPTIONS,
+	options,
 	onOptionsChange,
+	inputRef,
 	className,
 }: SearchInputProps) {
-	const inputRef = useRef<HTMLInputElement>(null);
+	const fieldRef = useRef<HTMLInputElement>(null);
+	// Own ref (clear button + autoFocus) and the caller's ref on one node.
+	const setField = useCallback(
+		(node: HTMLInputElement | null) => {
+			fieldRef.current = node;
+			if (typeof inputRef === "function") {
+				inputRef(node);
+			} else if (inputRef) {
+				inputRef.current = node;
+			}
+		},
+		[inputRef],
+	);
+
+	// An option the screen does not own must not look like a dead toggle.
+	const showOptions = options !== undefined || onOptionsChange !== undefined;
+	const current = options ?? DEFAULT_SEARCH_OPTIONS;
 
 	useEffect(() => {
 		if (autoFocus) {
-			inputRef.current?.focus();
+			fieldRef.current?.focus();
 		}
 	}, [autoFocus]);
 
@@ -89,9 +122,10 @@ export function SearchInput({
 						"h-8 w-full min-w-0 rounded-md border border-line bg-elev pr-8 pl-8 text-ink text-ui",
 						"focus:border-brand focus:shadow-[0_0_0_3px_var(--accent-soft)] focus:outline-none",
 					)}
+					data-onyx-search=""
 					onChange={(event) => onChange?.(event.target.value)}
 					onKeyDown={handleKeyDown}
-					ref={inputRef}
+					ref={setField}
 					title="vault 内を検索"
 					type="search"
 					value={value}
@@ -102,7 +136,7 @@ export function SearchInput({
 						className="absolute top-1/2 right-1 grid size-6 -translate-y-1/2 place-items-center rounded-md text-ink-faint transition-colors hover:bg-hover hover:text-ink"
 						onClick={() => {
 							onChange?.("");
-							inputRef.current?.focus();
+							fieldRef.current?.focus();
 						}}
 						title="検索語を消す"
 						type="button"
@@ -112,31 +146,36 @@ export function SearchInput({
 				) : null}
 			</div>
 
-			<div className="flex gap-1 pt-1.5">
-				{OPTION_META.map(({ key, label, Icon }) => {
-					const on = options[key];
-					return (
-						<button
-							aria-label={label}
-							aria-pressed={on}
-							className={cx(
-								"grid h-8 w-[34px] flex-none place-items-center rounded-md border transition-colors",
-								on
-									? "border-transparent bg-brand-soft text-brand"
-									: "border-line bg-elev text-ink-muted hover:bg-hover hover:text-ink",
-							)}
-							key={key}
-							onClick={() =>
-								onOptionsChange?.({ ...options, [key]: !on } as SearchOptions)
-							}
-							title={label}
-							type="button"
-						>
-							<Icon size={16} strokeWidth={1.6} />
-						</button>
-					);
-				})}
-			</div>
+			{showOptions ? (
+				<div className="flex gap-1 pt-1.5">
+					{OPTION_META.map(({ key, label, Icon }) => {
+						const on = current[key];
+						return (
+							<button
+								aria-label={label}
+								aria-pressed={on}
+								className={cx(
+									"grid h-8 w-[34px] flex-none place-items-center rounded-md border transition-colors",
+									on
+										? "border-transparent bg-brand-soft text-brand"
+										: "border-line bg-elev text-ink-muted hover:bg-hover hover:text-ink",
+								)}
+								key={key}
+								onClick={() =>
+									onOptionsChange?.({
+										...current,
+										[key]: !on,
+									} as SearchOptions)
+								}
+								title={label}
+								type="button"
+							>
+								<Icon size={16} strokeWidth={1.6} />
+							</button>
+						);
+					})}
+				</div>
+			) : null}
 		</div>
 	);
 }
