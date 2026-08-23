@@ -113,6 +113,7 @@ export function GraphView({
   className,
 }: GraphViewProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [placed, setPlaced] = useState<Record<string, Placed>>({});
   const [view, setView] = useState({ x: 0, y: 0, w: W, h: H });
@@ -264,6 +265,33 @@ export function GraphView({
     return () => svg.removeEventListener("wheel", onWheel);
   }, []);
 
+  /* ---------- touch: the graph owns every gesture while it is on screen ---------- */
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) {
+      return;
+    }
+    // iOS Safari ignores `touch-action` on SVG content, so one-finger pans
+    // also scroll the page. Swallow touchmove inside the graph (non-passive)
+    // and turn off page-level scrolling/bounce while the graph is mounted.
+    const swallow = (event: TouchEvent) => {
+      event.preventDefault();
+    };
+    host.addEventListener("touchmove", swallow, { passive: false });
+    const root = document.documentElement;
+    const previous = {
+      overscroll: root.style.overscrollBehavior,
+      overflow: root.style.overflow,
+    };
+    root.style.overscrollBehavior = "none";
+    root.style.overflow = "hidden";
+    return () => {
+      host.removeEventListener("touchmove", swallow);
+      root.style.overscrollBehavior = previous.overscroll;
+      root.style.overflow = previous.overflow;
+    };
+  }, []);
+
   /* ---------- pan ---------- */
   const drag = useRef<{
     pointerId: number;
@@ -367,7 +395,11 @@ export function GraphView({
 
   return (
     <div
-      className={cx("relative min-h-0 min-w-0 flex-1 overflow-hidden bg-app", className)}
+      className={cx(
+        "relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden overscroll-contain bg-app",
+        className,
+      )}
+      ref={hostRef}
       style={{
         backgroundImage: "radial-gradient(circle at 1px 1px, var(--graph-grid) 1px, transparent 0)",
         backgroundSize: "22px 22px",
