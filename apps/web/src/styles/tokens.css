@@ -281,6 +281,8 @@
 	--color-danger: var(--danger);
 	--color-tip: var(--tip-bg);
 	--color-tip-foreground: var(--tip-fg);
+	--color-mark: var(--mark-bg);
+	--color-mark-foreground: var(--mark-text);
 
 	--radius-sm: var(--r-sm);
 	--radius-md: var(--r-md);

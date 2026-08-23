@@ -37,6 +37,8 @@ import { IconFolder, IconNote } from "@/components/icons";
 | アイコン | demo の symbol | 意味 | 使う場所 |
 | --- | --- | --- | --- |
 | `IconChevron` | `i-chev` | 開閉トグル | ツリー/frontmatter の開閉、パンくずの区切り |
+| `IconChevronLeft` | `i-chev`(180°) | 前へ（時間軸） | カレンダーの前の月、前日のデイリーノート |
+| `IconChevronRight` | `i-chev` | 次へ（時間軸） | カレンダーの次の月、翌日のデイリーノート |
 | `IconArrowLeft` | `i-arrow-left` | 履歴を戻る | Header の ← ボタン |
 | `IconArrowRight` | `i-arrow-right` | 履歴を進む | Header の → ボタン |
 | `IconMenu` | `i-menu` | ファイルツリー | phone のドロワー開閉ボタン |
@@ -116,6 +118,7 @@ import { IconFolder, IconNote } from "@/components/icons";
 | `IconTip` | `—` | tip callout | blockquote.callout[data-callout=tip]（prose.css 側は CSS mask） |
 | `IconQuestion` | `—` | question callout | blockquote.callout[data-callout=question] |
 | `IconQuote` | `—` | quote callout / 引用 | blockquote.callout[data-callout=quote] |
+| `IconClose` | `—` | 入力のクリア / 閉じる | 検索ボックスのクリアボタン |
 
 ## ラベルの扱い
 
