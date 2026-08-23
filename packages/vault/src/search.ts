@@ -1,3 +1,4 @@
+import { plainText, plainTextBody } from "./text";
 import type { Note, SearchHit, VaultIndex } from "./types";
 
 export interface SearchOptions {
@@ -12,7 +13,7 @@ const CONTEXT = 40;
 const MAX_SNIPPETS = 3;
 
 interface Haystack {
-	/** Original text with newlines/tabs flattened to spaces (offsets kept). */
+	/** Plain text (markup already removed); snippet offsets refer to it. */
 	text: string;
 	/** NFKC + lower-cased text used for matching. */
 	norm: string;
@@ -71,11 +72,31 @@ function haystacksFor(index: VaultIndex, note: Note): NoteHaystacks {
 	const existing = perIndex.get(note.path);
 	if (existing) return existing;
 	const value: NoteHaystacks = {
-		title: makeHaystack(note.title),
-		body: makeHaystack(note.body),
+		title: makeHaystack(plainText(note.title)),
+		body: makeHaystack(plainTextBody(note.body)),
 	};
 	perIndex.set(note.path, value);
 	return value;
+}
+
+function isLowSurrogate(text: string, offset: number): boolean {
+	const code = text.charCodeAt(offset);
+	if (Number.isNaN(code) || code < 0xdc00 || code > 0xdfff) return false;
+	const previous = text.charCodeAt(offset - 1);
+	return previous >= 0xd800 && previous <= 0xdbff;
+}
+
+/**
+ * Keep snippet boundaries off the middle of a surrogate pair, otherwise a
+ * slice can end on half an emoji and the client renders a replacement char.
+ */
+function alignToCodePoint(
+	text: string,
+	offset: number,
+	direction: -1 | 1,
+): number {
+	if (offset <= 0 || offset >= text.length) return offset;
+	return isLowSurrogate(text, offset) ? offset + direction : offset;
 }
 
 function findAll(haystack: string, needle: string): number[] {
@@ -100,7 +121,11 @@ function buildSnippets(
 		const first = offsets[index] ?? 0;
 		const startNorm = first;
 		const startOriginal = toOriginal(haystack, startNorm);
-		const from = Math.max(0, startOriginal - CONTEXT);
+		const from = alignToCodePoint(
+			haystack.text,
+			Math.max(0, startOriginal - CONTEXT),
+			-1,
+		);
 		let to = Math.min(
 			haystack.text.length,
 			toOriginal(haystack, startNorm + needleLength) + CONTEXT,
@@ -115,7 +140,8 @@ function buildSnippets(
 			to = Math.min(haystack.text.length, Math.max(to, matchEnd + CONTEXT));
 			index++;
 		}
-		snippets.push({ text: haystack.text.slice(from, to), ranges });
+		const end = alignToCodePoint(haystack.text, to, 1);
+		snippets.push({ text: haystack.text.slice(from, end), ranges });
 	}
 	return snippets;
 }
@@ -137,8 +163,10 @@ function matchesFilters(note: Note, options: SearchOptions): boolean {
 }
 
 /**
- * Case-insensitive substring search over titles and bodies. Title matches
- * rank first, then the total number of matches.
+ * Case-insensitive substring search over titles and bodies. Both haystacks
+ * are the *plain text* of the note (see `plainTextBody`), so matches, counts
+ * and snippets never involve markdown syntax. Title matches rank first, then
+ * the total number of matches.
  */
 export function search(
 	index: VaultIndex,

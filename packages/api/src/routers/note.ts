@@ -1,7 +1,13 @@
 import type { Note } from "@Onyx/vault";
+import { normalizeFrontmatterTags } from "@Onyx/vault/tags";
 import { z } from "zod";
 import { publicProcedure } from "../index";
-import { noteDetailSchema, noteSummarySchema } from "../schemas";
+import type { ClaudeLog } from "../schemas";
+import {
+	claudeLogListSchema,
+	noteDetailSchema,
+	noteSummarySchema,
+} from "../schemas";
 import {
 	buildNoteDetail,
 	matchesFolder,
@@ -11,6 +17,11 @@ import {
 
 const DEFAULT_LIMIT = 50;
 const DEFAULT_RECENT_LIMIT = 10;
+
+/** Tag every exported Claude Code conversation carries in its frontmatter. */
+const CLAUDE_LOG_TAG = "claude-log";
+/** `02_ClaudeLogs/projects/<name>/…` — the fallback source for `project`. */
+const PROJECT_FROM_PATH = /^02_ClaudeLogs\/projects\/([^/]+)\//;
 
 const sortSchema = z.enum(["modified", "title", "path"]);
 
@@ -35,6 +46,67 @@ function hasTag(note: Note, tag: string): boolean {
 	return note.tags.some(
 		(value) => value === tag || value.startsWith(`${tag}/`),
 	);
+}
+
+/** YAML scalars we accept as text; anything else (lists, maps) is `null`. */
+function text(value: unknown): string | null {
+	if (typeof value === "string")
+		return value.trim() === "" ? null : value.trim();
+	if (typeof value === "number") return String(value);
+	if (value instanceof Date) return value.toISOString();
+	return null;
+}
+
+/**
+ * A log entry is a note tagged `claude-log` in its frontmatter *and* carrying
+ * a `session_id`. The second half excludes the `02_ClaudeLogs/Claude Log.md`
+ * hub note, which wears the tag but is not a conversation.
+ */
+function isClaudeLog(note: Note): boolean {
+	const tags = normalizeFrontmatterTags(note.frontmatter.tags);
+	if (!tags.some((tag) => tag.toLowerCase() === CLAUDE_LOG_TAG)) return false;
+	return text(note.frontmatter.session_id) !== null;
+}
+
+function toClaudeLog(note: Note): ClaudeLog {
+	return {
+		path: note.path,
+		title: note.title,
+		date: text(note.frontmatter.date),
+		created: text(note.frontmatter.created),
+		project:
+			text(note.frontmatter.project) ??
+			PROJECT_FROM_PATH.exec(note.path)?.[1] ??
+			null,
+		sessionId: text(note.frontmatter.session_id),
+	};
+}
+
+/** Newest first by `date`, then by `created`; missing values sort last. */
+function compareLogs(a: ClaudeLog, b: ClaudeLog): number {
+	for (const key of ["date", "created"] as const) {
+		const left = a[key];
+		const right = b[key];
+		if (left === right) continue;
+		if (left === null) return 1;
+		if (right === null) return -1;
+		return left < right ? 1 : -1;
+	}
+	return a.path.localeCompare(b.path);
+}
+
+function countProjects(logs: ClaudeLog[]): Array<{
+	project: string;
+	count: number;
+}> {
+	const counts = new Map<string, number>();
+	for (const log of logs) {
+		if (log.project === null) continue;
+		counts.set(log.project, (counts.get(log.project) ?? 0) + 1);
+	}
+	return [...counts]
+		.map(([project, count]) => ({ project, count }))
+		.sort((a, b) => b.count - a.count || a.project.localeCompare(b.project));
 }
 
 export const noteRouter = {
@@ -83,6 +155,45 @@ export const noteRouter = {
 			return {
 				items: matched.slice(offset, offset + limit).map(noteSummary),
 				total: matched.length,
+			};
+		}),
+
+	/**
+	 * Claude Code conversation logs, newest first. `projects` always counts
+	 * every log so the client can switch filters without a second request.
+	 */
+	logs: publicProcedure
+		.input(
+			z
+				.object({
+					limit: z.number().int().min(1).max(500).optional(),
+					offset: z.number().int().min(0).optional(),
+					project: z.string().optional(),
+				})
+				.optional(),
+		)
+		.output(claudeLogListSchema)
+		.handler(({ input, context }) => {
+			const index = context.vault.getIndex();
+
+			const logs = [...index.notes.values()]
+				.filter(isClaudeLog)
+				.map(toClaudeLog)
+				.sort(compareLogs);
+
+			const project = input?.project;
+			const matched =
+				project === undefined || project === ""
+					? logs
+					: logs.filter((log) => log.project === project);
+
+			const offset = input?.offset ?? 0;
+			const limit = input?.limit ?? DEFAULT_LIMIT;
+
+			return {
+				items: matched.slice(offset, offset + limit),
+				total: matched.length,
+				projects: countProjects(logs),
 			};
 		}),
 

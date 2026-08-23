@@ -56,6 +56,31 @@ export const noteDetailSchema = z.object({
 	size: z.number().int(),
 });
 
+/** One Claude Code conversation exported into `02_ClaudeLogs/`. */
+export const claudeLogSchema = z.object({
+	path: z.string(),
+	title: z.string(),
+	/** Frontmatter `date` (`YYYY-MM-DD`), or `null` when it is missing. */
+	date: z.string().nullable(),
+	/** Frontmatter `created` (`YYYY-MM-DD HH:mm`), or `null`. */
+	created: z.string().nullable(),
+	/** Frontmatter `project`, else the `projects/<name>/` path segment. */
+	project: z.string().nullable(),
+	sessionId: z.string().nullable(),
+});
+
+export const claudeLogProjectSchema = z.object({
+	project: z.string(),
+	count: z.number().int(),
+});
+
+export const claudeLogListSchema = z.object({
+	items: z.array(claudeLogSchema),
+	total: z.number().int(),
+	/** Facet over *every* log, so the client can offer the other projects. */
+	projects: z.array(claudeLogProjectSchema),
+});
+
 export const treeFileSchema = z.object({
 	kind: z.literal("file"),
 	name: z.string(),
@@ -146,5 +171,6 @@ export const dateSchema = z
 	.string()
 	.regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
+export type ClaudeLog = z.infer<typeof claudeLogSchema>;
 export type NoteDetail = z.infer<typeof noteDetailSchema>;
 export type NoteSummary = z.infer<typeof noteSummarySchema>;
