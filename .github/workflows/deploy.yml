@@ -1,0 +1,97 @@
+# Build the static vault bundle + the TanStack Start app and deploy to
+# Cloudflare Workers.
+#
+# Triggers
+#   - push to main            : Onyx のコード変更
+#   - workflow_dispatch       : 手動
+#   - workflow_call           : my-vault 側のワークフローから呼ばれる(vault の push / 15 分ごとの定期)。
+#                               public リポジトリから呼ぶと Actions の分数は呼び出し元(無料・無制限)に計上される
+#
+# Required repository secrets (Onyx): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+# Settings → Actions → General → Access: "Accessible from repositories owned by the user"
+# にしておくと my-vault から workflow_call できる。
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      vault_ref:
+        description: my-vault の ref(既定 main)
+        type: string
+        default: main
+        required: false
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      ONYX_READ_TOKEN:
+        description: private の Onyx を checkout するための read 権限 PAT(他リポジトリから呼ぶとき必須)
+        required: false
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Onyx
+        uses: actions/checkout@v4
+        with:
+          repository: SosukeIto/Onyx
+          ref: main
+          token: ${{ secrets.ONYX_READ_TOKEN || github.token }}
+
+      - name: Checkout my-vault
+        uses: actions/checkout@v4
+        with:
+          repository: SosukeIto/my-vault
+          ref: ${{ inputs.vault_ref || 'main' }}
+          path: data/vault
+          # 全履歴: ノートごとの更新日を git log から取るため
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Cache bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build vault bundle
+        run: bun run build:vault
+        env:
+          VAULT_DIR: data/vault
+          OUT_DIR: apps/web/public
+
+      - name: Build web
+        run: bun run build
+
+      - name: Apply D1 migrations
+        run: bunx wrangler d1 migrations apply onyx-db --remote
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy
+        run: bunx wrangler deploy
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

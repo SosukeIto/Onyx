@@ -1,0 +1,57 @@
+# my-vault リポジトリに置くワークフロー: .github/workflows/onyx.yml
+#
+# - push のたびに Onyx を再ビルド・再デプロイする(obsidian-git の自動 push に追随)
+# - 15 分ごとの定期実行は取りこぼし防止。HEAD が前回デプロイ時と同じならスキップする
+# - my-vault は public なので Actions の分数は無料・無制限。Onyx(private)の分数は消費しない
+#
+# 必要な設定
+#   my-vault の Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ONYX_READ_TOKEN
+#     (ONYX_READ_TOKEN = Onyx リポジトリを read できる fine-grained PAT。private の Onyx を checkout するため)
+#   Onyx の Settings → Actions → General → Access を「Accessible from repositories owned by the user」に
+name: onyx
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: onyx-deploy
+  cancel-in-progress: true
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.cache-hit }}
+    steps:
+      # 同じ HEAD で既にデプロイ済みならキャッシュキーが存在する → スキップ
+      - id: check
+        uses: actions/cache/restore@v4
+        with:
+          path: .onyx-deployed
+          key: onyx-deployed-${{ github.sha }}
+          lookup-only: true
+
+  deploy:
+    needs: changed
+    if: needs.changed.outputs.skip != 'true'
+    uses: SosukeIto/Onyx/.github/workflows/deploy.yml@main
+    with:
+      vault_ref: ${{ github.sha }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ONYX_READ_TOKEN: ${{ secrets.ONYX_READ_TOKEN }}
+
+  mark:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.sha }}" > .onyx-deployed
+      - uses: actions/cache/save@v4
+        with:
+          path: .onyx-deployed
+          key: onyx-deployed-${{ github.sha }}
