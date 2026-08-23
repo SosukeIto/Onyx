@@ -1,7 +1,7 @@
 # Onyx — Obsidian Vault Web Viewer
 
 [SosukeIto/my-vault](https://github.com/SosukeIto/my-vault) の Obsidian vault を Web 上で閲覧するアプリケーション。
-Better-T-Stack(Bun + Turborepo + Hono + oRPC + TanStack Router)で構築する。
+Better-T-Stack 系のスタック(Bun + TanStack Start + Cloudflare Workers + D1 + better-auth)で構築する。構成は muscle-memo に揃える。
 
 - 設計プラン: `docs/plan.html`
 - デモ画面(デザイン基準): `docs/demo.html`
@@ -9,7 +9,8 @@ Better-T-Stack(Bun + Turborepo + Hono + oRPC + TanStack Router)で構築する�
 
 ## プロジェクト決定事項(ユーザー判断、2026-08-23)
 
-- **データベースは使わない**: 索引(リンク・バックリンク・タグ・検索)はメモリ上で同期ごとに再構築する。DB の追加を提案しない
+- **システム構成は `~/Documents/GitHub/muscle-memo` と同じにする**(ユーザー指示: 2026-08-24): TanStack Start(SSR + server functions)単体の `apps/web` を Cloudflare Workers にデプロイ(`bun run deploy`)、better-auth + D1/Drizzle、PWA、Vite+(`vp`)で lint/fmt/test、lefthook。無料枠で運用する
+- **vault の内容に DB は使わない**: GitHub Actions が my-vault を checkout → `packages/vault` で索引・HTML を JSON 化 → 添付と一緒に Workers 静的アセットとしてデプロイする(契約: `packages/vault/src/static/types.ts`)。Workers は git を実行しない。D1 は better-auth のセッション/ユーザーにだけ使う
 - **対応端末は iPhone / Android / iPad / MacBook すべて**: phone(<640px)/ tablet(640〜1023px)/ desktop(≥1024px)の 3 クラス。検証は 390 / 820 / 1180 / 1440 幅のスクリーンショット
 - **「一つ前に見ていたページに戻る」は必須**: ヘッダーの ← → ボタン + ブラウザ履歴
 - **UI テキストは原則ゼロ**: ユーザーが読む文字は md の本文だけが理想。パネル見出し・ボタンラベル・ステータス文言は SVG アイコン + tooltip に置き換える。残してよいのはファイル名・本文・frontmatter の値・数字・設定画面のみ
