@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onyx Demo</title>
+<meta name="description" content="Obsidian vault (SosukeIto/my-vault) を Web で読むためのビューア UI デモ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700&family=M+PLUS+1+Code:wght@400;500&display=swap">
+<style>
+/* ============================================================
+   Onyx — design tokens
+   base: Obsidian Minimal / vault .obsidian/appearance.json
+   accent #0050d1 / M PLUS 1 / M PLUS 1 Code / baseFontSize 20
+   ============================================================ */
+:root{
+  --font-ui:"M PLUS 1","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,-apple-system,"Segoe UI",Roboto,"Yu Gothic UI",Meiryo,sans-serif;
+  --font-text:var(--font-ui);
+  --font-mono:"M PLUS 1 Code",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Hiragino Sans",monospace;
+
+  --fs-h1:27px; --fs-h2:21px; --fs-h3:18px;
+  --fs-body:17px; --fs-ui:13.5px; --fs-sm:12.5px; --fs-xs:11px;
+  --lh-body:1.85; --lh-ui:1.6; --lh-head:1.5;
+
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+  --r-sm:4px; --r-md:6px; --r-lg:10px; --r-xl:14px; --r-pill:999px;
+
+  --w-rail:68px; --w-left:266px; --w-right:280px; --h-header:48px; --w-read:760px;
+
+  --bg-app:#ffffff;
+  --bg-panel:#f7f7f8;
+  --bg-elev:#ffffff;
+  --bg-sunken:#f1f1f3;
+  --bg-hover:rgba(0,0,0,.045);
+  --bg-active:rgba(0,80,209,.10);
+  --bg-code:#f3f4f6;
+  --border:#e4e4e7;
+  --border-strong:#d2d2d8;
+  --text:#1c1c1f;
+  --text-muted:#65656d;
+  --text-faint:#93939c;
+  --accent:#0050d1;
+  --accent-hover:#0040a8;
+  --accent-contrast:#ffffff;
+  --accent-soft:rgba(0,80,209,.10);
+  --link:#0050d1;
+  --link-unresolved:#62779f;
+  --mark-bg:#ffe9a8;
+  --mark-text:#3d3000;
+  --tag-bg:rgba(0,80,209,.09);
+  --tag-text:#0050d1;
+  --ok:#1a7f4b;
+  --warn:#a05a00;
+  --shadow-1:0 1px 2px rgba(20,20,30,.06);
+  --shadow-2:0 12px 34px rgba(20,20,30,.16);
+  --graph-grid:rgba(0,0,0,.05);
+  --tip-bg:#25262b;--tip-fg:#f4f4f6;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg-app:#17181c; --bg-panel:#121317; --bg-elev:#1d1f25; --bg-sunken:#0e0f12;
+    --bg-hover:rgba(255,255,255,.065); --bg-active:rgba(110,155,255,.16); --bg-code:#1f2128;
+    --border:#2b2d34; --border-strong:#3b3e47;
+    --text:#e5e6ea; --text-muted:#a4a7b0; --text-faint:#7b7f8a;
+    --accent:#6e9bff; --accent-hover:#8ab0ff; --accent-contrast:#0f1116; --accent-soft:rgba(110,155,255,.15);
+    --link:#7aa2ff; --link-unresolved:#8a9dc4;
+    --mark-bg:#5b4a12; --mark-text:#ffe9a8;
+    --tag-bg:rgba(122,162,255,.15); --tag-text:#9db9ff;
+    --ok:#5fcf95; --warn:#e0a250;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 14px 38px rgba(0,0,0,.55);
+    --graph-grid:rgba(255,255,255,.05);
+    --tip-bg:#e9eaee;--tip-fg:#16171b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg-app:#17181c; --bg-panel:#121317; --bg-elev:#1d1f25; --bg-sunken:#0e0f12;
+  --bg-hover:rgba(255,255,255,.065); --bg-active:rgba(110,155,255,.16); --bg-code:#1f2128;
+  --border:#2b2d34; --border-strong:#3b3e47;
+  --text:#e5e6ea; --text-muted:#a4a7b0; --text-faint:#7b7f8a;
+  --accent:#6e9bff; --accent-hover:#8ab0ff; --accent-contrast:#0f1116; --accent-soft:rgba(110,155,255,.15);
+  --link:#7aa2ff; --link-unresolved:#8a9dc4;
+  --mark-bg:#5b4a12; --mark-text:#ffe9a8;
+  --tag-bg:rgba(122,162,255,.15); --tag-text:#9db9ff;
+  --ok:#5fcf95; --warn:#e0a250;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 14px 38px rgba(0,0,0,.55);
+  --graph-grid:rgba(255,255,255,.05);
+  --tip-bg:#e9eaee;--tip-fg:#16171b;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;overflow-x:hidden}
+body{
+  margin:0;background:var(--bg-app);color:var(--text);
+  font-family:var(--font-ui);font-size:var(--fs-ui);line-height:var(--lh-ui);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  font-feature-settings:"palt" 0; /* 日本語は字間を詰めない */
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:var(--link);text-decoration:none}
+ul,ol{margin:0;padding:0;list-style:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+::selection{background:var(--accent-soft)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+.tip{position:relative}
+.tip::after{
+  content:attr(data-tip);position:absolute;z-index:70;padding:4px 8px;border-radius:var(--r-md);
+  background:var(--tip-bg);color:var(--tip-fg);font-size:11px;line-height:1.45;white-space:nowrap;
+  box-shadow:var(--shadow-2);opacity:0;pointer-events:none;transition:opacity .1s .2s;
+}
+.tip:hover::after,.tip:focus-visible::after{opacity:1}
+.hdr .tip::after{top:calc(100% + 6px);left:50%;transform:translateX(-50%)}
+.hdr-right .tip::after{left:auto;right:0;transform:none}
+.rail .tip::after{left:calc(100% + 10px);top:50%;transform:translateY(-50%)}
+.icon{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.icon-sm{width:16px;height:16px;stroke-width:1.6}
+.icon-xs{width:14px;height:14px;stroke-width:1.6}
+.icon-lg{width:22px;height:22px}
+
+/* ---------- scrollbars ---------- */
+.scroll{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+.scroll::-webkit-scrollbar{width:10px;height:10px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border:3px solid var(--bg-panel);border-radius:var(--r-pill)}
+.scroll::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- app shell ---------- */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.hdr{
+  height:var(--h-header);flex:none;display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding-block:0;padding-left:max(var(--sp-3),env(safe-area-inset-left));
+  padding-right:max(var(--sp-3),env(safe-area-inset-right));
+  background:var(--bg-panel);border-bottom:1px solid var(--border);
+  position:relative;z-index:30;
+}
+.brand{display:grid;place-items:center;width:34px;height:34px;border-radius:var(--r-md);flex:none;transition:background .12s}
+.brand:hover{background:var(--bg-hover)}
+.brand-mark{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;color:var(--accent)}
+.hdr-sep{width:1px;height:20px;background:var(--border);flex:none}
+.crumb{display:flex;align-items:center;gap:2px;min-width:0;flex:1;color:var(--text-muted);font-size:var(--fs-sm)}
+.crumb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb .crumb-cur{color:var(--text);font-weight:500;flex:0 1 auto;min-width:60px}
+.crumb .icon{color:var(--text-faint);width:14px;height:14px;stroke-width:1.6}
+.crumb-dir{flex:none;max-width:22ch}
+.hdr-right{display:flex;align-items:center;gap:var(--sp-2);flex:none;margin-left:auto}
+.sync{
+  display:flex;align-items:center;gap:5px;height:28px;padding:0 9px;border-radius:var(--r-pill);
+  background:var(--bg-elev);border:1px solid var(--border);color:var(--text-muted);flex:none;
+}
+.sync .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.iconbtn{
+  position:relative;width:30px;height:30px;display:grid;place-items:center;border-radius:var(--r-md);
+  color:var(--text-muted);transition:background .12s,color .12s;
+}
+.iconbtn:hover{background:var(--bg-hover);color:var(--text)}
+.iconbtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.iconbtn[disabled]{color:var(--text-faint);opacity:.4;cursor:default;pointer-events:none}
+.navbtns{display:flex;align-items:center;gap:0;flex:none}
+.only-dark{display:none}
+:root[data-theme="dark"] .only-dark{display:block}
+:root[data-theme="dark"] .only-light{display:none}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .only-dark{display:block}
+  :root:not([data-theme="light"]) .only-light{display:none}
+}
+.drawer-btn{display:none}
+
+.body{flex:1;display:flex;min-height:0}
+
+/* ---------- rail ---------- */
+.rail{
+  width:var(--w-rail);flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:var(--sp-2) 0;background:var(--bg-panel);border-right:1px solid var(--border);z-index:20;
+}
+.rail-btn{
+  width:44px;height:44px;display:grid;place-items:center;
+  border-radius:var(--r-lg);color:var(--text-muted);transition:background .12s,color .12s;
+}
+.rail-btn:hover{background:var(--bg-hover);color:var(--text)}
+.rail-btn[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.rail-spacer{flex:1}
+
+/* ---------- panels ---------- */
+.screen{display:none;flex:1;min-width:0}
+.screen.is-active{display:flex}
+.panel{
+  flex:none;background:var(--bg-panel);display:flex;flex-direction:column;min-height:0;
+}
+.panel-l{width:var(--w-left);border-right:1px solid var(--border)}
+.panel-r{width:var(--w-right);border-left:1px solid var(--border)}
+.panel-head{
+  display:flex;align-items:center;gap:var(--sp-2);height:34px;flex:none;padding:0 var(--sp-3);
+  color:var(--text-faint);
+}
+.panel-head .count{margin-left:auto;font-size:var(--fs-xs);color:var(--text-muted);font-variant-numeric:tabular-nums}
+.panel-head .icon{color:var(--text-muted)}
+.panel-body{padding:0 var(--sp-2) var(--sp-6)}
+.sec{border-top:1px solid var(--border);margin-top:var(--sp-2);padding-top:2px}
+.sec:first-child{border-top:0;margin-top:0}
+
+/* search box */
+.searchbox{position:relative;padding:var(--sp-2) var(--sp-2) 6px}
+.searchbox .icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--text-faint);width:16px;height:16px}
+.searchbox input{
+  width:100%;height:32px;padding:0 10px 0 32px;border-radius:var(--r-md);
+  background:var(--bg-elev);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font-ui);font-size:var(--fs-ui);
+}
+.searchbox input::placeholder{color:var(--text-faint)}
+.searchbox input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ---------- file tree ---------- */
+.tree{padding:2px var(--sp-1) 0}
+.row{
+  display:flex;align-items:center;gap:5px;width:100%;height:27px;border-radius:var(--r-md);
+  padding-right:6px;padding-left:calc(4px + var(--d,0) * 13px);
+  color:var(--text-muted);font-size:var(--fs-ui);text-align:left;min-width:0;position:relative;
+}
+.row:hover{background:var(--bg-hover);color:var(--text)}
+.row .tw{width:14px;height:14px;flex:none;color:var(--text-faint);transition:transform .15s ease}
+.row .fi{width:15px;height:15px;flex:none;stroke-width:1.6;color:var(--text-faint)}
+.row .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .badge{flex:none;font-size:10.5px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.row.is-folder{font-weight:500;color:var(--text)}
+.row.is-open .tw{transform:rotate(90deg)}
+.row.is-active{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.row.is-active .fi{color:var(--accent)}
+.more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:30px;border-radius:var(--r-md);color:var(--text-muted)}
+.more:hover{background:var(--bg-hover);color:var(--text-muted)}
+.more .badge{font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
+.kids{display:block}
+.kids[hidden]{display:none}
+.tree-guide{position:relative}
+
+/* ---------- generic list items ---------- */
+.li{
+  display:block;width:100%;text-align:left;padding:7px 8px;border-radius:var(--r-md);
+  color:var(--text-muted);font-size:var(--fs-sm);min-width:0;
+}
+.li:hover{background:var(--bg-hover)}
+.li .t{display:block;color:var(--text);font-size:var(--fs-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .s{display:block;margin-top:2px;color:var(--text-faint);font-size:var(--fs-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- outline ---------- */
+.outline .row{height:25px;font-size:var(--fs-sm)}
+.outline .row.is-here{color:var(--accent);background:var(--accent-soft)}
+.outline .h1{--d:0;font-weight:500;color:var(--text)}
+.outline .h2{--d:1}
+.outline .h3{--d:2}
+
+/* ---------- backlinks ---------- */
+.bl{display:block;width:100%;text-align:left;padding:8px;border-radius:var(--r-md);border:1px solid transparent}
+.bl:hover{background:var(--bg-hover);border-color:var(--border)}
+.bl .p{display:flex;align-items:center;gap:5px;color:var(--text-faint);font-size:var(--fs-xs);min-width:0}
+.bl .p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl .t{display:block;margin-top:3px;color:var(--text);font-size:var(--fs-sm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl .q{margin-top:4px;color:var(--text-muted);font-size:var(--fs-sm);line-height:1.7;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ---------- property rows ---------- */
+.prop{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px 10px;padding:8px;font-size:var(--fs-sm);align-items:start}
+.prop dt{display:flex;align-items:center;color:var(--text-faint);min-width:0;padding-top:1px}
+.prop dd{margin:0;color:var(--text);min-width:0;overflow-wrap:anywhere}
+.prop dd code{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
+
+/* ============================================================
+   center column — reading view
+   ============================================================ */
+.main{flex:1;min-width:0;max-width:100%;display:flex;flex-direction:column;background:var(--bg-app)}
+.note-scroll{flex:1;min-height:0}
+.note{max-width:var(--w-read);margin:0 auto;padding:var(--sp-6) var(--sp-6) 30vh}
+.note-wide{max-width:900px}
+
+/* frontmatter properties */
+.fm{border:1px solid var(--border);border-radius:var(--r-lg);background:var(--bg-panel);overflow:hidden;margin-bottom:var(--sp-5)}
+.fm-head{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;color:var(--text-faint);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
+.fm-head .tw{width:13px;height:13px;transition:transform .15s}
+.fm.is-open .fm-head .tw{transform:rotate(90deg)}
+.fm-rows{padding:0 12px 10px}
+.fm-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;padding:6px 0;font-size:var(--fs-ui);border-top:1px solid var(--border)}
+.fm-row:first-child{border-top:0}
+.fm-row dt{display:flex;align-items:center;color:var(--text-faint);min-width:0;padding-top:3px}
+.fm-row dd{margin:0;color:var(--text);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.fm-row dd.mono{font-family:var(--font-mono);font-size:12px;color:var(--text-muted)}
+
+/* body typography */
+.md{font-family:var(--font-text);font-size:var(--fs-body);line-height:var(--lh-body);color:var(--text)}
+.md h1{font-size:var(--fs-h1);line-height:var(--lh-head);font-weight:700;margin:0 0 var(--sp-5);letter-spacing:.005em}
+.md h2{font-size:var(--fs-h2);line-height:var(--lh-head);font-weight:700;margin:var(--sp-6) 0 var(--sp-3)}
+.md h3{font-size:var(--fs-h3);line-height:var(--lh-head);font-weight:700;margin:var(--sp-5) 0 var(--sp-2)}
+.md p{margin:0 0 1.05em;overflow-wrap:anywhere}
+.md strong{font-weight:700}
+.md hr{border:0;border-top:1px solid var(--border);margin:var(--sp-6) 0}
+.md > ul:not(.tasks):not(.tabs-list){margin:0 0 1.05em;padding-left:1.4em;list-style:disc}
+.md > ul:not(.tasks):not(.tabs-list) li{margin:.25em 0;list-style:disc}
+.md ul.tasks,.md ul.tabs-list{list-style:none}
+.md ul.tasks li,.md ul.tabs-list li{list-style:none}
+.md .speaker{
+  display:flex;align-items:center;gap:8px;margin:var(--sp-6) 0 var(--sp-3);
+  padding-top:var(--sp-5);border-top:1px solid var(--border);font-size:15.5px;color:var(--text-muted);
+  font-weight:500;letter-spacing:.02em;
+}
+.md .speaker .who{font-size:16px;line-height:1}
+.md .speaker.first{border-top:0;padding-top:0;margin-top:var(--sp-5)}
+
+/* obsidian syntax */
+.ilink{color:var(--link);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .12s}
+.ilink:hover{border-bottom-color:currentColor}
+.ilink.unresolved{color:var(--link-unresolved);border-bottom:1px dashed currentColor;opacity:.95}
+.ilink.unresolved:hover{border-bottom-style:solid}
+.exlink{color:var(--link);border-bottom:1px solid transparent}
+.exlink:hover{border-bottom-color:currentColor}
+.exlink .icon{display:inline-block;vertical-align:-2px;margin-left:2px;width:14px;height:14px}
+.md code{font-family:var(--font-mono);font-size:.86em;background:var(--bg-code);border-radius:var(--r-sm);padding:1.5px 5px;overflow-wrap:anywhere}
+.md mark{background:var(--mark-bg);color:var(--mark-text);border-radius:2px;padding:0 2px}
+.md del{color:var(--text-faint);text-decoration:line-through;text-decoration-thickness:1px}
+
+.cb{position:relative;margin:0 0 1.2em;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--bg-code)}
+.cb-lang{position:absolute;top:6px;right:10px;font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);letter-spacing:.04em}
+.cb pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:13.5px;line-height:1.75;color:var(--text)}
+.cb .cm{color:var(--text-faint)}
+.cb .ky{color:var(--accent)}
+
+.callout{
+  --cal:var(--accent);
+  margin:0 0 1.2em;padding:12px 14px;border-radius:var(--r-lg);
+  border:1px solid var(--border);background:var(--bg-panel);
+  border-color:color-mix(in srgb,var(--cal) 28%,transparent);
+  background:color-mix(in srgb,var(--cal) 8%,transparent);
+}
+.callout .ct{display:flex;align-items:center;gap:7px;color:var(--cal);font-weight:700;font-size:15px;margin-bottom:6px}
+.callout p{margin:0;font-size:15.5px;line-height:1.8;color:var(--text);overflow-wrap:anywhere}
+.callout p + p{margin-top:.7em}
+.callout.warn{--cal:var(--warn)}
+
+.tasks{margin:0 0 1.2em;padding:0}
+.tasks li{display:flex;align-items:flex-start;gap:9px;padding:3px 0;font-size:16px;line-height:1.75;overflow-wrap:anywhere}
+.tasks .box{
+  width:17px;height:17px;flex:none;margin-top:5px;border-radius:var(--r-sm);
+  border:1.5px solid var(--border-strong);background:var(--bg-elev);display:grid;place-items:center;color:transparent;
+}
+.tasks .box .icon{width:12px;height:12px;stroke-width:2.4}
+.tasks li.done .box{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+.tasks li.done .tx{color:var(--text-faint);text-decoration:line-through;text-decoration-thickness:1px}
+
+.embed{margin:0 0 1.2em;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--bg-panel)}
+.embed-head{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:var(--fs-xs);min-width:0}
+.embed-head span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.embed-body{padding:14px 16px;background:var(--bg-app)}
+.embed-body p{font-size:15px;margin:0 0 .7em;color:var(--text-muted);overflow-wrap:anywhere}
+
+.math{
+  display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;margin:6px 0 4px;
+  font-family:"Times New Roman",Georgia,serif;font-size:19px;color:var(--text);overflow-x:auto;
+}
+.math i{font-style:italic;padding:0 1px}
+.math sub{font-size:.68em;font-style:italic}
+.frac{display:inline-flex;flex-direction:column;align-items:stretch;text-align:center;vertical-align:middle;margin:0 4px;line-height:1.25}
+.frac .num{padding:0 6px 2px;border-bottom:1px solid currentColor}
+.frac .den{padding:2px 6px 0}
+
+.taglist{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-5)}
+.tag{
+  display:inline-flex;align-items:center;gap:3px;height:24px;padding:0 10px;border-radius:var(--r-pill);
+  background:var(--tag-bg);color:var(--tag-text);font-size:var(--fs-sm);font-family:var(--font-ui);
+}
+.tag:hover{background:color-mix(in srgb,var(--tag-text) 18%,transparent)}
+
+/* daily note outline list (tab indented) */
+.tabs-list{margin:0 0 1.2em}
+.tabs-list li{position:relative;padding:2.5px 0 2.5px calc(var(--d,0) * 22px + 16px);font-size:16px;line-height:1.8;overflow-wrap:anywhere}
+.tabs-list li::before{
+  content:"";position:absolute;left:calc(var(--d,0) * 22px + 4px);top:14px;width:5px;height:5px;
+  border-radius:50%;background:var(--text-faint);
+}
+.tabs-list li[data-d="0"]{font-weight:500;color:var(--text);margin-top:.4em}
+.tabs-list li[data-d="1"]{color:var(--text-muted)}
+.tabs-list li[data-d="2"],.tabs-list li[data-d="3"]{color:var(--text-muted);font-size:15px}
+.tabs-list li[data-d="0"]::before{background:var(--accent)}
+
+/* ============================================================
+   calendar
+   ============================================================ */
+.cal{padding:var(--sp-2) var(--sp-3) var(--sp-4)}
+.cal-head{display:flex;align-items:center;gap:2px;margin-bottom:var(--sp-2)}
+.cal-title{flex:1;font-size:var(--fs-ui);font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dow{text-align:center;font-size:10px;color:var(--text-faint);padding:4px 0}
+.cal-dow.sun{color:#c0453b}
+.cal-dow.sat{color:#3a6ea8}
+.cal-cell{
+  position:relative;aspect-ratio:1/1;min-height:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:var(--r-md);font-size:var(--fs-sm);color:var(--text-faint);font-variant-numeric:tabular-nums;
+}
+.cal-cell.has:hover{background:var(--bg-hover)}
+.cal-cell.has{color:var(--text);cursor:pointer}
+.cal-cell.none{color:var(--text-faint);opacity:.55}
+.cal-cell .dot{position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75}
+.cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--border-strong)}
+.cal-cell.sel{background:var(--accent);color:var(--accent-contrast);font-weight:700}
+.cal-cell.sel .dot{background:var(--accent-contrast);opacity:.9}
+.cal-legend{display:flex;align-items:center;gap:6px;padding:10px 4px 0;font-size:var(--fs-xs);color:var(--text-muted);font-variant-numeric:tabular-nums}
+.cal-legend i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:1px}
+
+/* ============================================================
+   search
+   ============================================================ */
+.res-head{
+  display:flex;align-items:center;gap:var(--sp-3);flex:none;padding:var(--sp-4) var(--sp-6) var(--sp-3);
+  border-bottom:1px solid var(--border);
+}
+.qchip{display:flex;align-items:center;gap:7px;min-width:0;font-size:15px;font-weight:500;color:var(--text)}
+.qchip .icon{color:var(--text-faint);flex:none}
+.qchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat{display:flex;align-items:center;gap:5px;color:var(--text-muted);font-size:var(--fs-sm);font-variant-numeric:tabular-nums;flex:none}
+.stat .icon{color:var(--text-faint)}
+.select{
+  margin-left:auto;display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r-md);
+  border:1px solid var(--border);background:var(--bg-elev);color:var(--text-muted);flex:none;
+}
+.select:hover{background:var(--bg-hover);color:var(--text)}
+.res-list{padding:var(--sp-3) var(--sp-5) 20vh;max-width:880px;min-width:0}
+.res{
+  display:block;width:100%;text-align:left;padding:12px 14px;border-radius:var(--r-lg);
+  border:1px solid transparent;margin-bottom:2px;
+}
+.res:hover{background:var(--bg-panel);border-color:var(--border)}
+.res-t{display:flex;align-items:center;gap:8px;min-width:0}
+.res-t .icon{color:var(--text-faint)}
+.res-t .nm{flex:1;min-width:0;font-size:15px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-t .hits{flex:none;font-size:var(--fs-xs);color:var(--text-muted);background:var(--bg-sunken);border-radius:var(--r-pill);padding:2px 8px;font-variant-numeric:tabular-nums}
+.res-p{display:flex;align-items:center;gap:4px;margin:4px 0 0 26px;color:var(--text-faint);font-size:var(--fs-xs);min-width:0}
+.res-p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-q{display:block;margin:7px 0 0 26px;padding-left:12px;border-left:2px solid var(--border);color:var(--text-muted);font-size:var(--fs-sm);line-height:1.8;overflow-wrap:anywhere}
+.res-q + .res-q{margin-top:5px}
+.res mark{background:var(--mark-bg);color:var(--mark-text);border-radius:2px;padding:0 2px;font-weight:500}
+
+.facet{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border-radius:var(--r-md);font-size:var(--fs-sm);color:var(--text-muted);min-width:0}
+.facet:hover{background:var(--bg-hover)}
+.facet.on{background:var(--accent-soft);color:var(--accent)}
+.facet .nm{flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.facet .n{flex:none;font-size:var(--fs-xs);color:var(--text-muted);font-variant-numeric:tabular-nums}
+.facet.on .n{color:var(--accent)}
+.optrow{display:flex;gap:4px;padding:2px var(--sp-2) 6px}
+.opt{display:grid;place-items:center;width:34px;height:32px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-elev);color:var(--text-muted)}
+.opt:hover{background:var(--bg-hover);color:var(--text)}
+.opt[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.toggle{display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:var(--r-md);color:var(--text-muted)}
+.toggle:hover{background:var(--bg-hover)}
+.toggle .sw{width:28px;height:16px;border-radius:var(--r-pill);background:var(--border-strong);position:relative;flex:none;transition:background .15s}
+.toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:var(--shadow-1)}
+.toggle[aria-pressed="true"] .sw{background:var(--accent)}
+.toggle[aria-pressed="true"] .sw::after{transform:translateX(12px)}
+.toggle .sw{margin-left:auto}
+.toggle .icon{color:var(--text-muted);flex:none}
+.toggle[aria-pressed="true"] .icon{color:var(--accent)}
+
+/* ============================================================
+   graph
+   ============================================================ */
+.graph-wrap{flex:1;min-width:0;min-height:0;position:relative;background:
+  radial-gradient(circle at 1px 1px,var(--graph-grid) 1px,transparent 0) 0 0/22px 22px,var(--bg-app);overflow:hidden}
+.graph-svg{width:100%;height:100%;display:block;touch-action:none}
+.edge{stroke:var(--border-strong);stroke-width:1.1;opacity:.75}
+.edge.dash{stroke-dasharray:3 4}
+.node circle{fill:var(--accent);stroke:var(--bg-app);stroke-width:2;cursor:pointer;transition:opacity .18s}
+.node.un circle{fill:none;stroke:var(--link-unresolved);stroke-width:1.5;stroke-dasharray:3 3}
+.node text{fill:var(--text-muted);font-family:var(--font-ui);font-size:11px;text-anchor:middle;pointer-events:none}
+.node.big text{fill:var(--text);font-size:12.5px;font-weight:500}
+.node.cur circle{fill:var(--accent);stroke:var(--accent);stroke-width:3;paint-order:stroke;filter:drop-shadow(0 0 6px var(--accent-soft))}
+.node.cur text{fill:var(--accent);font-weight:700}
+.graph-svg.focusing .node:not(.hit) circle{opacity:.16}
+.graph-svg.focusing .node:not(.hit) text{opacity:.16}
+.graph-svg.focusing .edge:not(.hit){opacity:.1}
+.graph-ui{position:absolute;display:flex;gap:6px;align-items:center}
+.graph-ui.g-bl{left:14px;bottom:14px;padding:8px 12px;border-radius:var(--r-lg);background:var(--bg-panel);background:color-mix(in srgb,var(--bg-panel) 88%,transparent);border:1px solid var(--border);backdrop-filter:blur(6px);gap:16px;font-size:var(--fs-xs);color:var(--text-muted)}
+.graph-ui.g-br{right:14px;bottom:14px;flex-direction:column;padding:4px;border-radius:var(--r-lg);background:var(--bg-panel);border:1px solid var(--border)}
+.lg{display:flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%}
+.lg .s{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none}
+.lg .s.un{background:none;border:1.5px dashed var(--link-unresolved)}
+.slider{padding:8px}
+.slider label{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:5px;font-variant-numeric:tabular-nums}
+.slider label > span:last-child{margin-left:auto}
+.slider input[type="range"]{width:100%;accent-color:var(--accent);height:16px}
+
+/* ============================================================
+   responsive
+   ============================================================ */
+.scrim{
+  position:fixed;inset:0;background:rgba(10,10,14,.42);z-index:25;opacity:0;pointer-events:none;transition:opacity .18s;
+}
+body.drawer-open .scrim,body.right-open .scrim{opacity:1;pointer-events:auto}
+
+/* ---- desktop >=1024px : 3 columns ---- */
+@media (min-width:1024px) and (max-width:1319px){
+  :root{--w-left:238px;--w-right:254px;--w-read:680px}
+}
+
+/* ---- tablet + phone : right panel becomes an overlay ---- */
+@media (max-width:1023px){
+  .panel-r{display:none}
+  body.right-open .screen.is-active .panel-r{
+    display:flex;position:fixed;top:var(--h-header);right:0;bottom:0;width:min(332px,86vw);
+    z-index:26;box-shadow:var(--shadow-2);padding-right:env(safe-area-inset-right);
+  }
+}
+
+/* ---- tablet 640-1023px : rail + file tree + note (2 columns) ---- */
+@media (min-width:640px) and (max-width:1023px){
+  :root{--w-rail:64px;--w-left:230px;--w-read:100%}
+  .note{padding:var(--sp-5) var(--sp-5) 24vh}
+  .crumb-dir{max-width:14ch}
+  .sync .txt{display:none}
+  .res-list{padding:var(--sp-3) var(--sp-4) 22vh}
+  .rail-btn{width:52px}
+}
+
+/* ---- phone <640px : 1 column + bottom tab bar + drawer / bottom sheet ---- */
+@media (max-width:639px){
+  :root{
+    --h-header:56px;--h-tabbar:58px;--w-read:100%;
+    --fs-body:16px;--fs-h1:23px;--fs-h2:19px;
+  }
+  .app{padding-bottom:calc(var(--h-tabbar) + env(safe-area-inset-bottom))}
+  .hdr{gap:2px}
+  .drawer-btn{display:grid}
+  .iconbtn{width:40px;height:40px}
+  .iconbtn::before{content:"";position:absolute;inset:-2px}
+  .brand{width:32px;height:32px}
+  .brand{padding:0 2px}
+  .nav-fwd,.hdr-sep,.crumb-dir{display:none}
+  .crumb > .icon{display:none}
+  .rail .tip::after{left:50%;top:auto;bottom:calc(100% + 10px);transform:translateX(-50%)}
+  .crumb-cur{min-width:0;font-size:var(--fs-ui)}
+  .sync{height:40px;width:28px;padding:0;justify-content:center;gap:0;border:0;background:none}
+  .sync > .icon{display:none}
+  .sync .dot{width:9px;height:9px}
+  .rail{
+    position:fixed;left:0;right:0;bottom:0;width:auto;height:auto;flex-direction:row;align-items:stretch;
+    justify-content:space-around;gap:0;background:var(--bg-panel);border-right:0;border-top:1px solid var(--border);
+    padding:0 var(--sp-1) env(safe-area-inset-bottom);z-index:28;
+  }
+  .rail-spacer,.rail .rail-only-desktop{display:none}
+  .rail-btn{flex:1;max-width:110px;width:auto;min-height:52px;justify-content:center;padding:6px 0 4px}
+  .panel-l{
+    position:fixed;top:var(--h-header);left:0;bottom:calc(var(--h-tabbar) + env(safe-area-inset-bottom));
+    width:min(310px,88vw);z-index:26;transform:translateX(-100%);transition:transform .2s ease;
+    box-shadow:var(--shadow-2);padding-left:env(safe-area-inset-left);
+  }
+  body.drawer-open .screen.is-active .panel-l{transform:none}
+  body.right-open .screen.is-active .panel-r{
+    top:auto;left:0;right:0;width:auto;bottom:calc(var(--h-tabbar) + env(safe-area-inset-bottom));
+    max-height:68dvh;border-left:0;border-top:1px solid var(--border);
+    border-radius:var(--r-xl) var(--r-xl) 0 0;overflow-y:auto;padding-right:0;
+  }
+  .panel-r::before{
+    content:"";display:block;flex:none;width:38px;height:4px;border-radius:var(--r-pill);
+    background:var(--border-strong);margin:8px auto 2px;
+  }
+  .row{height:34px}
+  .li{padding:10px 8px}
+  .facet,.toggle{padding:10px 8px}
+  .cal-cell{min-height:38px}
+  .note{padding:var(--sp-4) var(--sp-4) 22vh}
+  .res-list{padding:var(--sp-2) var(--sp-3) 22vh}
+  .res-head{padding:var(--sp-3);flex-wrap:wrap;gap:var(--sp-2)}
+  .res-head h2{font-size:15px}
+  .res-p,.res-q{margin-left:0}
+  .select{margin-left:0}
+  .graph-ui.g-bl{
+    flex-direction:column;align-items:flex-start;gap:5px;left:10px;right:auto;bottom:10px;padding:7px 10px;
+    width:max-content;max-width:calc(100% - 20px);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+<symbol id="i-graph" viewBox="0 0 24 24"><circle cx="6" cy="17.2" r="2.6"/><circle cx="18" cy="17.2" r="2.6"/><circle cx="12" cy="5.8" r="2.8"/><path d="m10.7 8.3-3.1 6.4M13.3 8.3l3.1 6.4M8.6 17.2h6.8"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.3 14.6A8.6 8.6 0 0 1 9.4 3.7a8.6 8.6 0 1 0 10.9 10.9"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10.4 13.6a3.6 3.6 0 0 0 5.1 0l3-3a3.6 3.6 0 0 0-5.1-5.1l-1.6 1.6"/><path d="M13.6 10.4a3.6 3.6 0 0 0-5.1 0l-3 3a3.6 3.6 0 0 0 5.1 5.1l1.6-1.6"/></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24"><path d="M9.8 3.5 7.6 20.5M16.4 3.5l-2.2 17M4.3 9h15.4M3.6 15H19"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.6 4.6 4.6L19 6.8"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h11M4 17.5h7"/></symbol>
+<symbol id="i-sync" viewBox="0 0 24 24"><path d="M20.8 12.6A8.8 8.8 0 0 1 6 18.4M3.2 11.4A8.8 8.8 0 0 1 18 5.6"/><path d="M18.4 1.9v3.8h-3.8M5.6 22.1v-3.8h3.8"/></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19.5 12h-15"/><path d="m10.5 5.5-6.5 6.5 6.5 6.5"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M4.5 12h15"/><path d="m13.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M14.5 4.5v15"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 2"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15.4" r="3.6"/><path d="m10.6 12.8 8-8M15.8 7.6l2 2M13.2 10.2l2 2"/></symbol>
+<symbol id="i-type" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 11.2v5M12 7.8h.01"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.4 2.9 19.6h18.2z"/><path d="M12 10v4.2M12 17.2h.01"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5.5 12h13"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.4"/><circle cx="12" cy="12" r="2.4"/><path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M4.5 5v6.5a3 3 0 0 0 3 3H19"/><path d="m15.2 10.7 4 3.8-4 3.8"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h9.5M18.5 8H20M4 16h3.5M12.5 16H20"/><circle cx="16" cy="8" r="2.4"/><circle cx="10" cy="16" r="2.4"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path d="M3.6 5h16.8l-6.6 7.7V19l-3.6 2v-8.3z"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></symbol>
+<symbol id="i-sort" viewBox="0 0 24 24"><path d="M4 6.5h11M4 12h7M4 17.5h4"/><path d="M18 5.5v13M15 15.5l3 3 3-3"/></symbol>
+<symbol id="i-case" viewBox="0 0 24 24"><path d="M2.8 18 7.4 6.6 12 18M4.4 14.4h6"/><circle cx="17.4" cy="14.4" r="3.4"/><path d="M20.8 11v7"/></symbol>
+<symbol id="i-regex" viewBox="0 0 24 24"><path d="M7.6 5.6C5.9 7.3 5 9.5 5 12s.9 4.7 2.6 6.4M16.4 5.6C18.1 7.3 19 9.5 19 12s-.9 4.7-2.6 6.4"/><path d="M12 9.2v5.6M9.6 10.6l4.8 2.8M14.4 10.6l-4.8 2.8"/></symbol>
+<symbol id="i-fulltext" viewBox="0 0 24 24"><path d="M13.4 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.4"/><path d="M13.4 3v5h5"/><path d="M8.6 8.4h2M8.6 12h4"/><circle cx="16.6" cy="16" r="3.4"/><path d="m19.1 18.5 2.1 2.1"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M19.6 11.4 12 19a4.4 4.4 0 0 1-6.2-6.2l8.1-8.1a2.9 2.9 0 0 1 4.2 4.2l-8.1 8.1a1.5 1.5 0 0 1-2.1-2.1l7.5-7.5"/></symbol>
+<symbol id="i-unresolved" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6" stroke-dasharray="3.2 3"/></symbol>
+<symbol id="i-orphan" viewBox="0 0 24 24"><circle cx="5.8" cy="12" r="2.8"/><circle cx="18.2" cy="12" r="2.8"/><path d="M9 12h1.6M13.4 12H15"/></symbol>
+<symbol id="i-node" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5.2"/></symbol>
+<symbol id="i-edge" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="6" r="2.6"/><path d="m7.9 16.1 8.2-8.2"/></symbol>
+<symbol id="i-nodesize" viewBox="0 0 24 24"><circle cx="7.4" cy="15.4" r="3"/><circle cx="16.4" cy="10.4" r="5.2"/></symbol>
+<symbol id="i-distance" viewBox="0 0 24 24"><circle cx="4.8" cy="12" r="2.2"/><circle cx="19.2" cy="12" r="2.2"/><path d="M8 12h8M11 9.6 8.6 12 11 14.4M13 9.6l2.4 2.4-2.4 2.4"/></symbol>
+<symbol id="i-repulse" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.4"/><path d="M12 9.2V4.2M12 14.8v5M9.2 12h-5M14.8 12h5"/><path d="m9.8 6.4 2.2-2.2 2.2 2.2M9.8 17.6l2.2 2.2 2.2-2.2M6.4 9.8 4.2 12l2.2 2.2M17.6 9.8 19.8 12l-2.2 2.2"/></symbol>
+<symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 6.2h16M4 17.8h16"/><rect x="4" y="9.8" width="11.5" height="4.4" rx="1.3"/></symbol>
+<symbol id="i-git" viewBox="0 0 24 24"><circle cx="6.6" cy="6.4" r="2.6"/><circle cx="6.6" cy="17.6" r="2.6"/><circle cx="17.4" cy="12" r="2.6"/><path d="M6.6 9v6"/><path d="M9.2 6.9c4.4.5 5.5 2.3 5.6 3.1"/></symbol>
+<symbol id="i-template" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke-dasharray="3.4 3"/><path d="M8.4 9.6h7.2M8.4 14.2h4.2"/></symbol>
+<symbol id="i-unlinked" viewBox="0 0 24 24"><path d="m10.3 13.7-1.7 1.7a3.6 3.6 0 0 1-5.1-5.1l1.7-1.7"/><path d="m13.7 10.3 1.7-1.7a3.6 3.6 0 0 1 5.1 5.1l-1.7 1.7"/><path d="M9.6 12h1.2M13.2 12h1.2"/></symbol>
+<symbol id="i-newnote" viewBox="0 0 24 24"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/><path d="M17 3.5v6M14 6.5h6"/></symbol>
+</defs></svg>
+
+<div class="app">
+<header class="hdr">
+  <button class="iconbtn drawer-btn tip" id="drawerBtn" data-tip="ファイルツリー" aria-label="ファイルツリーを開く" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button>
+  <button class="brand tip" data-tip="my-vault" aria-label="vault のルート my-vault">
+    <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4 20.6 7v10L12 21.6 3.4 17V7z"/><path d="M3.4 7 12 11.6 20.6 7M12 11.6v10"/></svg>
+  </button>
+  <div class="navbtns">
+    <button class="iconbtn tip" id="backBtn" data-tip="戻る" aria-label="前に見ていた画面に戻る" disabled><svg class="icon"><use href="#i-arrow-left"/></svg></button>
+    <button class="iconbtn nav-fwd tip" id="fwdBtn" data-tip="進む" aria-label="次の画面に進む" disabled><svg class="icon"><use href="#i-arrow-right"/></svg></button>
+  </div>
+  <span class="hdr-sep" aria-hidden="true"></span>
+  <nav class="crumb" id="crumb" aria-label="開いているファイルのパス">
+    <svg class="icon"><use href="#i-chev"/></svg><span class="crumb-dir">02_ClaudeLogs</span><svg class="icon"><use href="#i-chev"/></svg>
+    <span class="crumb-cur">2026-07-28_週次レビューの手順を決める_a3c81b52</span>
+  </nav>
+  <div class="hdr-right">
+    <span class="sync tip" data-tip="同期済み 2026-08-22 08:35 · 65df74d" role="img" aria-label="GitHub と同期済み 2026-08-22 08:35 コミット 65df74d">
+      <span class="dot"></span><svg class="icon icon-xs"><use href="#i-sync"/></svg>
+    </span>
+    <button class="iconbtn tip" id="rightBtn" data-tip="アウトライン / バックリンク" aria-label="右サイドバーを開閉" aria-pressed="false"><svg class="icon"><use href="#i-panel"/></svg></button>
+    <button class="iconbtn tip" id="themeBtn" data-tip="テーマ切替" aria-label="ライト / ダークテーマを切り替え">
+      <svg class="icon only-light"><use href="#i-moon"/></svg><svg class="icon only-dark"><use href="#i-sun"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="body">
+<nav class="rail" role="tablist" aria-label="画面切り替え">
+  <button class="rail-btn tip" role="tab" id="tab-notes" aria-controls="screen-notes" aria-selected="true" data-screen="notes" data-tip="ノート" aria-label="ノート">
+    <svg class="icon icon-lg"><use href="#i-note"/></svg></button>
+  <button class="rail-btn tip" role="tab" id="tab-daily" aria-controls="screen-daily" aria-selected="false" data-screen="daily" data-tip="デイリーノート" aria-label="デイリーノート">
+    <svg class="icon icon-lg"><use href="#i-cal"/></svg></button>
+  <button class="rail-btn tip" role="tab" id="tab-search" aria-controls="screen-search" aria-selected="false" data-screen="search" data-tip="検索" aria-label="検索">
+    <svg class="icon icon-lg"><use href="#i-search"/></svg></button>
+  <button class="rail-btn tip" role="tab" id="tab-graph" aria-controls="screen-graph" aria-selected="false" data-screen="graph" data-tip="グラフビュー" aria-label="グラフビュー">
+    <svg class="icon icon-lg"><use href="#i-graph"/></svg></button>
+  <span class="rail-spacer"></span>
+  <button class="rail-btn rail-only-desktop tip" data-tip="設定" aria-label="設定"><svg class="icon icon-lg"><use href="#i-sliders"/></svg></button>
+</nav>
+
+<main class="screens" style="flex:1;display:flex;min-width:0">
+
+<!-- ============================ 1. ノート閲覧 ============================ -->
+<section class="screen is-active" id="screen-notes" role="tabpanel" aria-labelledby="tab-notes">
+  <aside class="panel panel-l">
+    <div class="searchbox">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input type="search" aria-label="vault 内を検索" title="vault 内を検索（⌘K）">
+    </div>
+    <div class="panel-head" title="ファイル">
+      <svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="sr">ファイル</span>
+      <span class="count">148</span>
+      <button class="iconbtn" style="width:22px;height:22px;margin-left:2px" aria-label="新規ノート" title="新規ノート"><svg class="icon icon-sm"><use href="#i-newnote"/></svg></button>
+    </div>
+    <div class="panel-body scroll tree" style="flex:1">
+      <button class="row is-folder" data-tree style="--d:0" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">00_Daily</span><span class="badge">19</span></button>
+      <div class="kids" hidden>
+        <button class="row is-folder" data-tree style="--d:1" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">2026</span></button>
+        <div class="kids" hidden></div>
+        <button class="row" style="--d:1"><svg class="icon tw" style="visibility:hidden"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">Daily Note</span></button>
+      </div>
+
+      <button class="row is-folder is-open" data-tree style="--d:0" aria-expanded="true"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">01_Note</span><span class="badge">92</span></button>
+      <div class="kids">
+        <button class="row is-folder" data-tree style="--d:1" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">01_Research</span></button>
+        <div class="kids" hidden></div>
+        <button class="row is-folder" data-tree style="--d:1" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">02_Projects</span></button>
+        <div class="kids" hidden></div>
+        <button class="row is-folder is-open" data-tree style="--d:1" aria-expanded="true"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">03_考え方</span></button>
+        <div class="kids">
+          <button class="row" style="--d:2" title="2026-07-10_問題は分けて考える.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-10_問題は分けて考える</span></button>
+          <button class="row" style="--d:2" title="長い文章を書くときは見出しから先に決めてしまう.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">長い文章を書くときは見出しから先に決めてしまう</span></button>
+          <button class="row" style="--d:2" title="アウトラインから書く.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">アウトラインから書く</span></button>
+          <button class="row" style="--d:2" title="図と表では伝わる情報が違う.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">図と表では伝わる情報が違う</span></button>
+          <button class="row" style="--d:2" title="迷ったら小さく試してみる.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">迷ったら小さく試してみる</span></button>
+          <button class="row" style="--d:2" title="自分で決められないことは気にしない.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">自分で決められないことは気にしない</span></button>
+        </div>
+        <button class="row is-folder" data-tree style="--d:1" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">04_English</span></button>
+        <div class="kids" hidden>
+          <button class="row is-folder" data-tree style="--d:2" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">英文法メモ</span></button>
+          <div class="kids" hidden>
+            <button class="row is-folder" data-tree style="--d:3" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">単語帳</span></button>
+            <div class="kids" hidden></div>
+            <button class="row" style="--d:3"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">00_学習計画</span></button>
+            <button class="row" style="--d:3"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">06_つなぎ言葉の使い分け</span></button>
+          </div>
+          <button class="row" style="--d:2"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">動詞の形まとめ</span></button>
+        </div>
+      </div>
+
+      <button class="row is-folder is-open" data-tree style="--d:0" aria-expanded="true"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">02_ClaudeLogs</span><span class="badge">105</span></button>
+      <div class="kids">
+        <button class="row is-folder" data-tree style="--d:1" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">projects</span><span class="badge">18</span></button>
+        <div class="kids" hidden></div>
+        <button class="row" style="--d:1" title="Claude Log.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">Claude Log</span></button>
+        <button class="row" style="--d:1" title="2026-08-20_日報テンプレの整理_5d1c8e70.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-08-20_日報テンプレの整理_5d1c8e70</span></button>
+        <button class="row" style="--d:1" title="2026-08-06_PDF から表データを抜き出す_2e90b4c1.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-08-06_PDF から表データを抜き出す_2e90b4c1</span></button>
+        <button class="row" style="--d:1" title="2026-07-30_長文ノートの分割方針を検討_6f42d3a9.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-30_長文ノートの分割方針を検討_6f42d3a9</span></button>
+        <button class="row" style="--d:1" title="2026-07-28_タグ設計：階層タグと属性タグの使い分け_7b03e5c2.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-28_タグ設計：階層タグと属性タグの使い分け_7b03e5c2</span></button>
+        <button class="row is-active" style="--d:1" aria-current="page" title="2026-07-28_週次レビューの手順を決める_a3c81b52.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-28_週次レビューの手順を決める_a3c81b52</span></button>
+        <button class="row" style="--d:1" title="2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04</span></button>
+        <button class="row" style="--d:1" title="2026-07-17_Orbitのテンプレートを週次レビュー用に整える_b8e5602d.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-17_Orbitのテンプレートを週次レビュー用に整える_b8e5602d</span></button>
+        <button class="row" style="--d:1" title="2026-07-10_Orbitの通知が多すぎる問題_1d76c4be.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-07-10_Orbitの通知が多すぎる問題_1d76c4be</span></button>
+        <button class="row" style="--d:1" title="2026-06-26_Orbitの一覧で並び順が日付順にならない原因を調査_4e28d9f1.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-06-26_Orbitの一覧で並び順が日付順にならない原因を調査_4e28d9f1</span></button>
+        <button class="row" style="--d:1" title="2026-06-22_レビュー時間の見積もり_c50a8f36.md"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">2026-06-22_レビュー時間の見積もり_c50a8f36</span></button>
+        <button class="more" style="padding-left:26px" title="残り 94 件を表示" aria-label="残り 94 件を表示"><svg class="icon icon-sm"><use href="#i-more"/></svg><span class="badge">94</span></button>
+      </div>
+
+      <button class="row is-folder" data-tree style="--d:0" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">98_templates</span><span class="badge">3</span></button>
+      <div class="kids" hidden>
+        <button class="row" style="--d:1"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">10_current_time</span></button>
+        <button class="row" style="--d:1"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">created</span></button>
+        <button class="row" style="--d:1"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">daily</span></button>
+      </div>
+      <button class="row is-folder" data-tree style="--d:0" aria-expanded="false"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon fi"><use href="#i-folder"/></svg><span class="nm">99_scripts</span></button>
+      <div class="kids" hidden></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="note-scroll scroll">
+    <article class="note">
+      <div class="fm is-open" id="fmBlock">
+        <button class="fm-head" id="fmToggle" aria-expanded="true" aria-label="frontmatter プロパティ 5 件（折りたたみ）" title="プロパティ"><svg class="icon tw"><use href="#i-chev"/></svg><svg class="icon icon-sm"><use href="#i-info"/></svg><span style="margin-left:auto">5</span></button>
+        <dl class="fm-rows">
+          <div class="fm-row"><dt title="title"><svg class="icon icon-xs"><use href="#i-type"/></svg><span class="sr">title</span></dt><dd>週次レビューの手順を決める</dd></div>
+          <div class="fm-row"><dt title="date"><svg class="icon icon-xs"><use href="#i-cal"/></svg><span class="sr">date</span></dt><dd>2026-07-28</dd></div>
+          <div class="fm-row"><dt title="created"><svg class="icon icon-xs"><use href="#i-clock"/></svg><span class="sr">created</span></dt><dd>2026-07-28 19:46</dd></div>
+          <div class="fm-row"><dt title="tags"><svg class="icon icon-xs"><use href="#i-hash"/></svg><span class="sr">tags</span></dt><dd><a class="tag" href="#"><svg class="icon icon-xs"><use href="#i-hash"/></svg>claude-log</a></dd></div>
+          <div class="fm-row"><dt title="session_id"><svg class="icon icon-xs"><use href="#i-key"/></svg><span class="sr">session_id</span></dt><dd class="mono">a3c81b52-4e77-42d9-9c14-0b6ea3f81d55</dd></div>
+        </dl>
+      </div>
+
+      <div class="md">
+        <h1 id="h-0">週次レビューの手順を決める</h1>
+        <p><a class="ilink" href="#" title="02_ClaudeLogs/Claude Log.md">Claude Log</a></p>
+
+        <h3 class="speaker first" id="h-1"><span class="who">🧑</span>自分</h3>
+        <p>毎週ノートを見返そうと思っているのに続かない。手順を決めて<code>[[]]</code>で関連ノートにつなぐところまで型にしたい</p>
+
+        <h3 class="speaker" id="h-2"><span class="who">🤖</span>Claude</h3>
+        <p>続かない原因はたいてい <strong>「何を見るか」が毎回ぶれる</strong> ことです。見る対象と順番を固定して、<strong>終わりの合図</strong>を決めると習慣になります。手順は三段だけにしましょう。</p>
+
+        <h2 id="h-3">三段の手順</h2>
+        <p><strong>1. 今週の Daily を上から流し読みする</strong></p>
+        <p>内容を評価しない。気になった行の先頭に <code>!</code> を付けるだけにします。ここで立ち止まると先に進まないので、<a class="ilink unresolved" href="#" title="未作成: 気になった行の扱い">気になった行の扱い</a> は次の段に回します。</p>
+        <p>目安は 10 分。終わらなければ途中で打ち切って構いません。<a class="ilink unresolved" href="#" title="未作成: 週次レビュー">週次レビュー</a> <a class="ilink unresolved" href="#" title="未作成: 見返しのコツ">見返しのコツ</a> <a class="ilink unresolved" href="#" title="未作成: 時間の区切り方">時間の区切り方</a> のように、あとで書きたいテーマ名だけを置いておくと次週の入口になります。</p>
+        <p><strong>2. <code>!</code> の行を 1 枚のノートに集める</strong></p>
+        <p>集めた行ごとに「どのノートの話か」を 1 つ決めて <code>[[]]</code> で結びます。結び先がまだ無ければ、その場では作らず未作成のままにしておく。これが翌週以降の「書くべきノート」の一覧になります。</p>
+
+        <div class="callout">
+          <div class="ct"><svg class="icon icon-sm"><use href="#i-info"/></svg>先に枠だけ作る</div>
+          <p>集約用のノートは毎週同じ名前規則にしておくと、あとで <strong>週番号で並べて比較</strong>できます。テンプレートに見出しを 3 つ置いておき、<strong>空の見出しを埋めるだけ</strong>の作業にするのがコツです。</p>
+        </div>
+
+        <p>テンプレートはこれで十分です。</p>
+        <div class="cb"><span class="cb-lang">markdown</span><pre><span class="cm">---</span>
+<span class="ky">week</span>: 2026-W31
+<span class="cm">---</span></pre></div>
+        <p>週番号を frontmatter に持たせておくと、検索で <code>week:</code> と打つだけで過去のレビューが全部並びます。ファイル名に日付を入れる方式より、並べ替えと絞り込みが楽になります。</p>
+
+        <h2 id="h-4">やらないこと</h2>
+        <p>全部のノートを整理し直そうとしないこと。レビューの目的は <mark>今週の考えを来週につなぐ</mark> ことで、倉庫の棚卸しではありません。整理は気になった 1〜2 枚だけに絞ります。</p>
+        <div class="callout warn">
+          <div class="ct"><svg class="icon icon-sm"><use href="#i-alert"/></svg>手順を増やしすぎない</div>
+          <p>三段で収まらなくなったら、足すのではなく <strong>どれかを削る</strong>。手順が 5 つを超えた週は、ほぼ確実に翌週やらなくなります。</p>
+        </div>
+
+        <h3 class="speaker" id="h-5"><span class="who">🧑</span>自分</h3>
+        <p>レビューした週としていない週を区別したい。チェックボックスを frontmatter に置ける？</p>
+
+        <h3 class="speaker" id="h-6"><span class="who">🤖</span>Claude</h3>
+        <p>frontmatter に <code>reviewed: true</code> を置けば、プロパティ表示でチェックボックスになります。本文側に <code>- [x] レビュー済み</code> と書く方式でも <del>集計はできません</del> 集計できますが、検索しやすさでは frontmatter に軍配が上がります。</p>
+
+        <hr>
+        <h2 id="h-7">次にやること</h2>
+        <ul class="tasks" id="taskList">
+          <li class="done"><span class="box" role="checkbox" aria-checked="true" tabindex="0"><svg class="icon"><use href="#i-check"/></svg></span><span class="tx">レビュー用テンプレートに見出しを 3 つ置く</span></li>
+          <li><span class="box" role="checkbox" aria-checked="false" tabindex="0"><svg class="icon"><use href="#i-check"/></svg></span><span class="tx">Daily の frontmatter に <code>week</code> を足す</span></li>
+          <li><span class="box" role="checkbox" aria-checked="false" tabindex="0"><svg class="icon"><use href="#i-check"/></svg></span><span class="tx"><a class="ilink unresolved" href="#" title="未作成: 気になった行の扱い">気になった行の扱い</a> を書き起こす</span></li>
+        </ul>
+        <p>所要時間の見積もりはこの埋め込みで足りる。</p>
+        <div class="embed">
+          <div class="embed-head"><svg class="icon icon-xs"><use href="#i-link"/></svg><span>2026-06-22_レビュー時間の見積もり &gt; 1. 合計時間</span></div>
+          <div class="embed-body">
+            <p>見返す Daily の枚数 <i>n</i> に対して、1 枚あたりの時間 <i>t</i> を一定とみなす。合計は枚数に比例し、上限を 10 分に固定する。</p>
+            <div class="math"><i>T</i>(<i>n</i>)&nbsp;=&nbsp;min(<span class="frac"><span class="num"><i>n</i>&thinsp;·&thinsp;<i>t</i></span><span class="den">1</span></span>,&nbsp;10)&nbsp;&nbsp;(<i>t</i>&nbsp;≈&nbsp;1.5)</div>
+          </div>
+        </div>
+
+        <div class="taglist">
+          <a class="tag" href="#"><svg class="icon icon-xs"><use href="#i-hash"/></svg>claude-log</a>
+          <a class="tag" href="#"><svg class="icon icon-xs"><use href="#i-hash"/></svg>obsidian</a>
+          <a class="tag" href="#"><svg class="icon icon-xs"><use href="#i-hash"/></svg>レビュー</a>
+        </div>
+      </div>
+    </article>
+    </div>
+  </div>
+
+  <aside class="panel panel-r scroll">
+    <div class="sec">
+      <div class="panel-head" title="アウトライン"><svg class="icon icon-sm"><use href="#i-list"/></svg><span class="sr">アウトライン</span></div>
+      <div class="panel-body outline" style="padding-bottom:var(--sp-3)">
+        <button class="row h1 is-here" style="--d:0"><span class="nm">週次レビューの手順を決める</span></button>
+        <button class="row h3" style="--d:1"><span class="nm">🧑 自分</span></button>
+        <button class="row h3" style="--d:1"><span class="nm">🤖 Claude</span></button>
+        <button class="row h2" style="--d:2"><span class="nm">三段の手順</span></button>
+        <button class="row h2" style="--d:2"><span class="nm">やらないこと</span></button>
+        <button class="row h3" style="--d:1"><span class="nm">🧑 自分</span></button>
+        <button class="row h3" style="--d:1"><span class="nm">🤖 Claude</span></button>
+        <button class="row h2" style="--d:2"><span class="nm">次にやること</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="バックリンク"><svg class="icon icon-sm"><use href="#i-back"/></svg><span class="sr">バックリンク</span><span class="count">2</span></div>
+      <div class="panel-body" style="padding-bottom:var(--sp-3)">
+        <button class="bl"><span class="p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>00_Daily/2026/07</span></span>
+          <span class="t">28</span><span class="q">週次レビューの型を整理 → <span style="color:var(--link)">[[2026-07-28_週次レビューの手順を決める_a3c81b52]]</span></span></button>
+        <button class="bl"><span class="p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>01_Note/03_考え方</span></span>
+          <span class="t">2026-07-10_問題は分けて考える</span><span class="q">手順は三段で足りる。参照: <span style="color:var(--link)">[[2026-07-28_週次レビューの手順を決める_a3c81b52]]</span></span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="リンクされていないメンション"><svg class="icon icon-sm"><use href="#i-unlinked"/></svg><span class="sr">リンクされていないメンション</span><span class="count">3</span></div>
+      <div class="panel-body" style="padding-bottom:var(--sp-3)">
+        <button class="bl"><span class="t">2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04</span><span class="q">Obsidian 1.9 で入った公式機能で、これが実質「Orbit のデータベース」です。</span></button>
+        <button class="bl"><span class="t">2026-07-10_Orbitの通知が多すぎる問題_1d76c4be</span><span class="q">Obsidianはプレーンなテキストです。トグル、カラム、コールアウト、リレーションは…</span></button>
+        <button class="bl"><span class="t">2026-07-17_Orbitのテンプレートを週次レビュー用に整える_b8e5602d</span><span class="q">リンク切れを避けるなら、ファイル名にIDを残したまま表示名だけ変える手もあります。</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="ファイル情報"><svg class="icon icon-sm"><use href="#i-info"/></svg><span class="sr">ファイル情報</span></div>
+      <dl class="prop">
+        <dt title="パス"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span class="sr">パス</span></dt><dd>02_ClaudeLogs/</dd>
+        <dt title="更新日時"><svg class="icon icon-xs"><use href="#i-clock"/></svg><span class="sr">更新日時</span></dt><dd>2026-07-28 20:12</dd>
+        <dt title="文字数"><svg class="icon icon-xs"><use href="#i-type"/></svg><span class="sr">文字数</span></dt><dd>3,842</dd>
+        <dt title="リンク数"><svg class="icon icon-xs"><use href="#i-link"/></svg><span class="sr">リンク数</span></dt><dd>6</dd>
+        <dt title="未作成リンク数"><svg class="icon icon-xs"><use href="#i-unresolved"/></svg><span class="sr">未作成リンク数</span></dt><dd>5</dd>
+        <dt title="blob ハッシュ"><svg class="icon icon-xs"><use href="#i-git"/></svg><span class="sr">blob ハッシュ</span></dt><dd><code>a41f9c2</code></dd>
+      </dl>
+    </div>
+  </aside>
+</section>
+
+<!-- ============================ 2. Daily Note ============================ -->
+<section class="screen" id="screen-daily" role="tabpanel" aria-labelledby="tab-daily" hidden>
+  <aside class="panel panel-l scroll">
+    <div class="cal">
+      <div class="cal-head">
+        <span class="cal-title">2026-08</span>
+        <button class="iconbtn" aria-label="前の月"><svg class="icon icon-sm" style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
+        <button class="iconbtn" aria-label="次の月"><svg class="icon icon-sm"><use href="#i-chev"/></svg></button>
+        <button class="iconbtn" aria-label="今日へ"><svg class="icon icon-sm"><use href="#i-target"/></svg></button>
+      </div>
+      <div class="cal-grid" role="grid" aria-label="2026年8月のデイリーノート">
+        <div class="cal-dow sun">日</div><div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div><div class="cal-dow">木</div><div class="cal-dow">金</div><div class="cal-dow sat">土</div>
+        <div class="cal-cell none"></div><div class="cal-cell none"></div><div class="cal-cell none"></div><div class="cal-cell none"></div><div class="cal-cell none"></div><div class="cal-cell none"></div>
+        <div class="cal-cell none">1</div>
+        <div class="cal-cell has">2<span class="dot"></span></div><div class="cal-cell has">3<span class="dot"></span></div><div class="cal-cell has">4<span class="dot"></span></div><div class="cal-cell has">5<span class="dot"></span></div><div class="cal-cell has">6<span class="dot"></span></div><div class="cal-cell has">7<span class="dot"></span></div><div class="cal-cell none">8</div>
+        <div class="cal-cell has">9<span class="dot"></span></div><div class="cal-cell has">10<span class="dot"></span></div><div class="cal-cell none">11</div><div class="cal-cell has">12<span class="dot"></span></div><div class="cal-cell none">13</div><div class="cal-cell none">14</div><div class="cal-cell none">15</div>
+        <div class="cal-cell none">16</div><div class="cal-cell none">17</div><div class="cal-cell has">18<span class="dot"></span></div><div class="cal-cell has">19<span class="dot"></span></div><div class="cal-cell has sel" aria-current="page">20<span class="dot"></span></div><div class="cal-cell none">21</div><div class="cal-cell none">22</div>
+        <div class="cal-cell none today">23</div><div class="cal-cell none">24</div><div class="cal-cell none">25</div><div class="cal-cell none">26</div><div class="cal-cell none">27</div><div class="cal-cell none">28</div><div class="cal-cell none">29</div>
+        <div class="cal-cell none">30</div><div class="cal-cell none">31</div>
+      </div>
+      <div class="cal-legend" title="ノートがある日 / 日数"><i></i><span>12 / 31</span></div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="最近のデイリーノート"><svg class="icon icon-sm"><use href="#i-clock"/></svg><span class="sr">最近のデイリーノート</span></div>
+      <div class="panel-body">
+        <button class="li" style="background:var(--accent-soft)"><span class="t" style="color:var(--accent)">2026-08-20</span><span class="s">勉強会の資料作成 / 記事の下書き修正</span></button>
+        <button class="li"><span class="t">2026-08-19</span><span class="s">本の返却 / 移動の予定を確認</span></button>
+        <button class="li"><span class="t">2026-08-18</span><span class="s">描画パッケージにレイアウト調整を追加</span></button>
+        <button class="li"><span class="t">2026-08-12</span><span class="s">読書メモの整理 / 英語の音読</span></button>
+        <button class="li"><span class="t">2026-08-10</span><span class="s">サムネイル画像の出力先を確認</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="テンプレート"><svg class="icon icon-sm"><use href="#i-template"/></svg><span class="sr">テンプレート</span></div>
+      <div class="panel-body">
+        <button class="row" style="--d:0"><svg class="icon fi"><use href="#i-note"/></svg><span class="nm">98_templates/daily.md</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="note-scroll scroll">
+    <article class="note">
+      <div class="md">
+        <h1 id="d-0">2026-08-20</h1>
+        <p><a class="ilink" href="#" title="00_Daily/Daily Note.md">Daily Note</a></p>
+        <h3 id="d-1">タスク</h3>
+        <ul class="tabs-list">
+          <li data-d="0" style="--d:0"><del>勉強会の資料作成</del></li>
+          <li data-d="1" style="--d:1">やったこと</li>
+          <li data-d="2" style="--d:2">スライドの下書き</li>
+          <li data-d="2" style="--d:2">サンプルをタイル単位から画像単位の入力に変更</li>
+          <li data-d="3" style="--d:3">これにより処理を修正した際に毎回サンプルを差し替える必要がなくなった。</li>
+          <li data-d="2" style="--d:2">各出力ファイルの保存先を一本に修正</li>
+          <li data-d="0" style="--d:0">本の返却</li>
+          <li data-d="1" style="--d:1">貸出カード必須</li>
+          <li data-d="0" style="--d:0">宿の予約</li>
+          <li data-d="1" style="--d:1">日程が確定しない限り予約するのが難しい</li>
+          <li data-d="0" style="--d:0">記事の下書き修正</li>
+          <li data-d="1" style="--d:1">今やってる</li>
+          <li data-d="0" style="--d:0">デスクライト購入</li>
+          <li data-d="1" style="--d:1">保証書を箱にしまう</li>
+          <li data-d="0" style="--d:0">描画パッケージにレイアウト調整を入れる</li>
+          <li data-d="1" style="--d:1">ブランチ名をどうするか相談した上で作る</li>
+          <li data-d="0" style="--d:0">買い出し</li>
+        </ul>
+        <div class="taglist">
+          <a class="tag" href="#"><svg class="icon icon-xs"><use href="#i-cal"/></svg>daily</a>
+        </div>
+      </div>
+    </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3. 検索結果 ============================ -->
+<section class="screen" id="screen-search" role="tabpanel" aria-labelledby="tab-search" hidden>
+  <aside class="panel panel-l scroll">
+    <div class="searchbox">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input type="search" value="Orbit" aria-label="vault 内を検索" title="vault 内を検索（⌘K）">
+    </div>
+    <div class="optrow">
+      <button class="opt" aria-pressed="false" aria-label="大文字小文字を区別" title="大文字小文字を区別"><svg class="icon icon-sm"><use href="#i-case"/></svg></button>
+      <button class="opt" aria-pressed="false" aria-label="正規表現" title="正規表現"><svg class="icon icon-sm"><use href="#i-regex"/></svg></button>
+      <button class="opt" aria-pressed="true" aria-label="本文も検索" title="本文も検索"><svg class="icon icon-sm"><use href="#i-fulltext"/></svg></button>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="フォルダで絞り込む"><svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="sr">フォルダで絞り込む</span></div>
+      <div class="panel-body">
+        <button class="facet on"><svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="nm">02_ClaudeLogs</span><span class="n">34</span></button>
+        <button class="facet"><svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="nm">00_Daily</span><span class="n">1</span></button>
+        <button class="facet" style="opacity:.55"><svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="nm">01_Note</span><span class="n">0</span></button>
+        <button class="facet" style="opacity:.55"><svg class="icon icon-sm"><use href="#i-folder"/></svg><span class="nm">98_templates</span><span class="n">0</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="タグ"><svg class="icon icon-sm"><use href="#i-hash"/></svg><span class="sr">タグ</span></div>
+      <div class="panel-body">
+        <button class="facet"><svg class="icon icon-sm"><use href="#i-hash"/></svg><span class="nm">claude-log</span><span class="n">34</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="期間で絞り込む"><svg class="icon icon-sm"><use href="#i-cal"/></svg><span class="sr">期間で絞り込む</span></div>
+      <div class="panel-body">
+        <button class="facet"><span class="nm" style="padding-left:2px">2026-06</span><span class="n">14</span></button>
+        <button class="facet"><span class="nm" style="padding-left:2px">2026-07</span><span class="n">18</span></button>
+        <button class="facet"><span class="nm" style="padding-left:2px">2026-08</span><span class="n">3</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="res-head">
+      <span class="qchip"><svg class="icon icon-sm"><use href="#i-search"/></svg><span>Orbit</span></span>
+      <span class="stat" title="一致したファイル数"><svg class="icon icon-sm"><use href="#i-note"/></svg>35</span>
+      <span class="stat" title="一致した箇所の総数"><svg class="icon icon-sm"><use href="#i-mark"/></svg>285</span>
+      <button class="select" aria-label="並び順: 関連度順" title="並び順: 関連度順"><svg class="icon icon-sm"><use href="#i-sort"/></svg></button>
+    </div>
+    <div class="scroll" style="flex:1;min-height:0">
+    <div class="res-list">
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-06-30_Orbitの共有リンクが切れる条件_3a7be812</span><span class="hits">29</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-06-30_Orbitの共有リンクが切れる条件_3a7be812.md</span></span>
+        <span class="res-q">共有リンクは<mark>Orbit</mark>側で公開範囲を変えると無効になります。</span>
+        <span class="res-q"><mark>Orbit</mark>の設定画面で「リンクを再発行」を押すと新しい URL になります。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-07-17_Orbitのテンプレートを週次レビュー用に整える_b8e5602d</span><span class="hits">18</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-07-17_Orbitのテンプレートを週次レビュー用に整える_b8e5602d.md</span></span>
+        <span class="res-q"><mark>Orbit</mark>のテンプレートは見出し 3 つと日付欄だけにしました。</span>
+        <span class="res-q">週ごとの振り返りは<mark>Orbit</mark>に 1 週 1 ページで置く</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-07-10_Orbitの通知が多すぎる問題_1d76c4be</span><span class="hits">18</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-07-10_Orbitの通知が多すぎる問題_1d76c4be.md</span></span>
+        <span class="res-q">通知の設定は<mark>Orbit</mark>のワークスペース単位とページ単位の二段構えになっていて、ページ側の設定が優先されます。まずページ側を「メンションのみ」にするのが…</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-06-24_<mark>Orbit</mark>のボードに列を足す_e614cb27</span><span class="hits">17</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-06-24_Orbitのボードに列を足す_e614cb27.md</span></span>
+        <span class="res-q"><mark>Orbit</mark>のボードに「保留」列を足しました。<mark>Orbit</mark>側の既定ではカードは末尾に並びます。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-06-25_<mark>Orbit</mark>の履歴を日付で絞り込む_7f2ad908</span><span class="hits">12</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-06-25_Orbitの履歴を日付で絞り込む_7f2ad908.md</span></span>
+        <span class="res-q">結論から言うと、<strong><mark>Orbit</mark>の履歴は日付の範囲指定ができる</strong>ので、月ごとに見返すのが楽です。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04</span><span class="hits">9</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04.md</span></span>
+        <span class="res-q">タグ名の表記ゆれは<mark>Orbit</mark>の一括置換で直せます。<code>tag:</code> で絞り込んでから置換すると、関係ないページに影響しません。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-06-26_<mark>Orbit</mark>の一覧で並び順が日付順にならない原因を調査_4e28d9f1</span><span class="hits">8</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-06-26_Orbitの一覧で並び順が日付順にならない原因を調査_4e28d9f1.md</span></span>
+        <span class="res-q"><mark>Orbit</mark>の一覧は「作成日」ではなく「最終更新」で並んでいました。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-note"/></svg><span class="nm">2026-07-10_<mark>Orbit</mark>のカードの色分けを決める_5c48f1d3</span><span class="hits">11</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>02_ClaudeLogs / 2026-07-10_Orbitのカードの色分けを決める_5c48f1d3.md</span></span>
+        <span class="res-q"><strong>注意点</strong>: <mark>Orbit</mark>のカード色は 8 色までなので、分類は 8 種類以内に収めます。</span>
+      </button>
+      <button class="res">
+        <span class="res-t"><svg class="icon icon-sm"><use href="#i-cal"/></svg><span class="nm">26</span><span class="hits">1</span></span>
+        <span class="res-p"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span>00_Daily / 2026 / 07 / 26.md</span></span>
+        <span class="res-q"><mark>orbit</mark>のテンプレートを直す</span>
+      </button>
+      <button class="more" style="height:38px" title="残り 26 ファイルを表示" aria-label="残り 26 ファイルを表示"><svg class="icon icon-sm"><use href="#i-more"/></svg><span class="badge">26</span></button>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 4. グラフビュー ============================ -->
+<section class="screen" id="screen-graph" role="tabpanel" aria-labelledby="tab-graph" hidden>
+  <aside class="panel panel-l scroll">
+    <div class="searchbox">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input type="search" aria-label="ノードを絞り込む" title="ノードを絞り込む">
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="フィルタ"><svg class="icon icon-sm"><use href="#i-filter"/></svg><span class="sr">フィルタ</span></div>
+      <div class="panel-body">
+        <button class="toggle" aria-pressed="true" aria-label="タグを表示" title="タグを表示"><svg class="icon icon-sm"><use href="#i-hash"/></svg><span class="sw"></span></button>
+        <button class="toggle" aria-pressed="false" aria-label="添付ファイルを表示" title="添付ファイルを表示"><svg class="icon icon-sm"><use href="#i-clip"/></svg><span class="sw"></span></button>
+        <button class="toggle" aria-pressed="true" aria-label="未作成ノートを表示" title="未作成ノートを表示"><svg class="icon icon-sm"><use href="#i-unresolved"/></svg><span class="sw"></span></button>
+        <button class="toggle" aria-pressed="false" aria-label="孤立ノートを表示" title="孤立ノートを表示"><svg class="icon icon-sm"><use href="#i-orphan"/></svg><span class="sw"></span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="表示の調整"><svg class="icon icon-sm"><use href="#i-sliders"/></svg><span class="sr">表示の調整</span></div>
+      <div class="panel-body">
+        <div class="slider" title="ノードサイズ"><label for="s1"><svg class="icon icon-sm"><use href="#i-nodesize"/></svg><span class="sr">ノードサイズ</span><span>1.0</span></label><input id="s1" type="range" min="0" max="100" value="52" aria-label="ノードサイズ"></div>
+        <div class="slider" title="リンク距離"><label for="s2"><svg class="icon icon-sm"><use href="#i-distance"/></svg><span class="sr">リンク距離</span><span>180</span></label><input id="s2" type="range" min="0" max="100" value="64" aria-label="リンク距離"></div>
+        <div class="slider" title="反発力"><label for="s3"><svg class="icon icon-sm"><use href="#i-repulse"/></svg><span class="sr">反発力</span><span>0.8</span></label><input id="s3" type="range" min="0" max="100" value="40" aria-label="反発力"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="統計"><svg class="icon icon-sm"><use href="#i-info"/></svg><span class="sr">統計</span></div>
+      <dl class="prop">
+        <dt title="ノード数"><svg class="icon icon-xs"><use href="#i-node"/></svg><span class="sr">ノード数</span></dt><dd>148</dd>
+        <dt title="未作成ノート数"><svg class="icon icon-xs"><use href="#i-unresolved"/></svg><span class="sr">未作成ノート数</span></dt><dd>32</dd>
+        <dt title="エッジ数"><svg class="icon icon-xs"><use href="#i-edge"/></svg><span class="sr">エッジ数</span></dt><dd>361</dd>
+        <dt title="孤立ノート数"><svg class="icon icon-xs"><use href="#i-orphan"/></svg><span class="sr">孤立ノート数</span></dt><dd>21</dd>
+      </dl>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="graph-wrap">
+      <svg class="graph-svg" id="graphSvg" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet" role="img" aria-label="vault のリンク構造グラフ（15 ノード表示中）">
+        <g id="gZoom">
+          <g id="edges">
+            <line class="edge" data-a="n2" data-b="n1" x1="120" y1="195" x2="220" y2="300"/>
+            <line class="edge" data-a="n3" data-b="n1" x1="100" y1="360" x2="220" y2="300"/>
+            <line class="edge" data-a="n4" data-b="n1" x1="255" y1="170" x2="220" y2="300"/>
+            <line class="edge" data-a="n5" data-b="n1" x1="165" y1="440" x2="220" y2="300"/>
+            <line class="edge" data-a="n6" data-b="n1" x1="305" y1="385" x2="220" y2="300"/>
+            <line class="edge" data-a="n7" data-b="n1" x1="60" y1="282" x2="220" y2="300"/>
+            <line class="edge" data-a="n9" data-b="n8" x1="560" y1="68" x2="450" y2="120"/>
+            <line class="edge" data-a="n10" data-b="n8" x1="578" y1="158" x2="450" y2="120"/>
+            <line class="edge" data-a="n11" data-b="n8" x1="425" y1="42" x2="450" y2="120"/>
+            <line class="edge dash" data-a="n2" data-b="n12" x1="120" y1="195" x2="480" y2="455"/>
+            <line class="edge dash" data-a="n2" data-b="n15" x1="120" y1="195" x2="385" y2="522"/>
+            <line class="edge dash" data-a="n2" data-b="n13" x1="120" y1="195" x2="600" y2="522"/>
+            <line class="edge dash" data-a="n12" data-b="n14" x1="480" y1="455" x2="560" y2="382"/>
+            <line class="edge dash" data-a="n12" data-b="n13" x1="480" y1="455" x2="600" y2="522"/>
+            <line class="edge dash" data-a="n13" data-b="n14" x1="600" y1="522" x2="560" y2="382"/>
+            <line class="edge" data-a="n16" data-b="n17" x1="780" y1="145" x2="890" y2="72"/>
+            <line class="edge" data-a="n16" data-b="n18" x1="780" y1="145" x2="893" y2="215"/>
+            <line class="edge" data-a="n16" data-b="n19" x1="780" y1="145" x2="700" y2="52"/>
+            <line class="edge" data-a="n16" data-b="n20" x1="780" y1="145" x2="800" y2="272"/>
+            <line class="edge" data-a="n17" data-b="n18" x1="890" y1="72" x2="893" y2="215"/>
+            <line class="edge" data-a="n18" data-b="n20" x1="893" y1="215" x2="800" y2="272"/>
+            <line class="edge dash" data-a="n21" data-b="n22" x1="800" y1="430" x2="715" y2="512"/>
+            <line class="edge" data-a="n5" data-b="n21" x1="165" y1="440" x2="800" y2="430"/>
+          </g>
+          <g id="nodes">
+            <g class="node big" data-id="n1" data-name="Claude Log" data-path="02_ClaudeLogs/Claude Log.md" data-links="139" tabindex="0" role="button" aria-label="Claude Log">
+              <circle cx="220" cy="300" r="26"/><text x="220" y="342">Claude Log</text></g>
+            <g class="node cur" data-id="n2" data-name="2026-07-28_週次レビューの手順を決める_a3c81b52" data-path="02_ClaudeLogs/" data-links="6" tabindex="0" role="button" aria-label="2026-07-28 週次レビューの手順を決める">
+              <circle cx="120" cy="195" r="11"/><text x="120" y="222">2026-07-28_ノート同士を…</text></g>
+            <g class="node" data-id="n3" data-name="2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04" data-path="02_ClaudeLogs/" data-links="1" tabindex="0" role="button" aria-label="Obsidian のテーブル表示機能を検討">
+              <circle cx="100" cy="360" r="9"/><text x="104" y="385">2026-07-26_Obsidian のテ…</text></g>
+            <g class="node" data-id="n4" data-name="2026-07-10_Orbitの通知が多すぎる問題_1d76c4be" data-path="02_ClaudeLogs/" data-links="1" tabindex="0" role="button" aria-label="Obsidianと静的Wikiの機能比較">
+              <circle cx="255" cy="170" r="9"/><text x="255" y="195">2026-07-10_Obsidianと静…</text></g>
+            <g class="node" data-id="n5" data-name="2026-06-26_Orbitの一覧で並び順が日付順にならない原因を調査_4e28d9f1" data-path="02_ClaudeLogs/" data-links="2" tabindex="0" role="button" aria-label="Orbitの資料一覧から特定のページが表示されない原因を調査">
+              <circle cx="165" cy="440" r="9"/><text x="165" y="465">2026-06-26_Orbitの資料…</text></g>
+            <g class="node" data-id="n6" data-links="1"><circle cx="305" cy="385" r="5"/></g>
+            <g class="node" data-id="n7" data-links="1"><circle cx="60" cy="282" r="5"/></g>
+            <g class="node big" data-id="n8" data-name="Daily Note" data-path="00_Daily/Daily Note.md" data-links="20" tabindex="0" role="button" aria-label="Daily Note">
+              <circle cx="450" cy="120" r="18"/><text x="450" y="154">Daily Note</text></g>
+            <g class="node" data-id="n9" data-name="20" data-path="00_Daily/2026/08/20.md" data-links="1" tabindex="0" role="button" aria-label="2026-08-20">
+              <circle cx="560" cy="68" r="8"/><text x="560" y="91">2026-08-20</text></g>
+            <g class="node" data-id="n10" data-name="19" data-path="00_Daily/2026/08/19.md" data-links="1" tabindex="0" role="button" aria-label="2026-08-19">
+              <circle cx="578" cy="158" r="8"/><text x="578" y="181">2026-08-19</text></g>
+            <g class="node" data-id="n11" data-name="26" data-path="00_Daily/2026/07/26.md" data-links="1" tabindex="0" role="button" aria-label="2026-07-26">
+              <circle cx="425" cy="42" r="7"/><text x="425" y="64">2026-07-26</text></g>
+            <g class="node un" data-id="n12" data-name="MOC" data-path="未作成" data-links="9" tabindex="0" role="button" aria-label="MOC 未作成">
+              <circle cx="480" cy="455" r="14"/><text x="480" y="485">MOC</text></g>
+            <g class="node un" data-id="n13" data-name="タスク管理" data-path="未作成" data-links="3" tabindex="0" role="button" aria-label="タスク管理 未作成">
+              <circle cx="600" cy="522" r="10"/><text x="600" y="548">タスク管理</text></g>
+            <g class="node un" data-id="n14" data-name="命名規則" data-path="未作成" data-links="3" tabindex="0" role="button" aria-label="命名規則 未作成">
+              <circle cx="560" cy="382" r="10"/><text x="560" y="408">命名規則</text></g>
+            <g class="node un" data-id="n15" data-name="ハブノートの作り方" data-path="未作成" data-links="3" tabindex="0" role="button" aria-label="ハブノートの作り方 未作成">
+              <circle cx="385" cy="522" r="10"/><text x="385" y="548">ハブノートの作り方</text></g>
+            <g class="node big" data-id="n16" data-name="00_学習計画" data-path="01_Note/04_English/英文法メモ/" data-links="24" tabindex="0" role="button" aria-label="00_学習計画">
+              <circle cx="780" cy="145" r="18"/><text x="780" y="179">00_学習計画</text></g>
+            <g class="node big" data-id="n17" data-name="20_語彙ノートの使い方" data-path="01_Note/04_English/英文法メモ/単語帳/" data-links="27" tabindex="0" role="button" aria-label="20_語彙ノートの使い方">
+              <circle cx="890" cy="72" r="17"/><text x="880" y="105">20_語彙ノートの使い方</text></g>
+            <g class="node" data-id="n18" data-name="16_単語_基本コア" data-path="01_Note/04_English/英文法メモ/単語帳/" data-links="9" tabindex="0" role="button" aria-label="16_単語_基本コア">
+              <circle cx="893" cy="215" r="12"/><text x="880" y="243">16_単語_基本コア</text></g>
+            <g class="node" data-id="n19" data-name="06_つなぎ言葉の使い分け" data-path="01_Note/04_English/英文法メモ/" data-links="10" tabindex="0" role="button" aria-label="06_つなぎ言葉の使い分け">
+              <circle cx="700" cy="52" r="11"/><text x="700" y="79">06_つなぎ言葉の使い分け</text></g>
+            <g class="node" data-id="n20" data-name="18_進捗メモ" data-path="01_Note/04_English/英文法メモ/" data-links="8" tabindex="0" role="button" aria-label="18_進捗メモ">
+              <circle cx="800" cy="272" r="11"/><text x="800" y="299">18_進捗メモ</text></g>
+            <g class="node" data-id="n21" data-name="個人サイトの構成メモ" data-path="01_Note/02_Projects/" data-links="9" tabindex="0" role="button" aria-label="個人サイトの構成メモ">
+              <circle cx="800" cy="430" r="13"/><text x="800" y="459">個人サイトの構成メモ</text></g>
+            <g class="node un" data-id="n22" data-name="デプロイ" data-path="未作成" data-links="3" tabindex="0" role="button" aria-label="デプロイ 未作成">
+              <circle cx="715" cy="512" r="10"/><text x="715" y="538">デプロイ</text></g>
+          </g>
+        </g>
+      </svg>
+      <div class="graph-ui g-bl" role="img" aria-label="凡例: 塗りの円は既存ノート、破線の円は未作成リンク、円の大きさは被リンク数">
+        <span class="lg" title="既存ノート"><i class="s"></i></span>
+        <span class="lg" title="未作成リンク"><i class="s un"></i></span>
+        <span class="lg" title="円の大きさ = 被リンク数"><i class="s" style="width:6px;height:6px"></i><i class="s" style="width:13px;height:13px"></i></span>
+      </div>
+      <div class="graph-ui g-br">
+        <button class="iconbtn" id="zoomIn" aria-label="拡大"><svg class="icon"><use href="#i-plus"/></svg></button>
+        <button class="iconbtn" id="zoomOut" aria-label="縮小"><svg class="icon"><use href="#i-minus"/></svg></button>
+        <button class="iconbtn" id="zoomFit" aria-label="全体を表示"><svg class="icon"><use href="#i-target"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel panel-r scroll">
+    <div class="sec">
+      <div class="panel-head" title="選択中のノード"><svg class="icon icon-sm"><use href="#i-graph"/></svg><span class="sr">選択中のノード</span></div>
+      <div class="panel-body">
+        <div style="padding:8px;font-size:15px;font-weight:500;overflow-wrap:anywhere" id="gName">Claude Log</div>
+        <dl class="prop">
+          <dt title="パス"><svg class="icon icon-xs"><use href="#i-folder"/></svg><span class="sr">パス</span></dt><dd id="gPath">02_ClaudeLogs/Claude Log.md</dd>
+          <dt title="被リンク数"><svg class="icon icon-xs"><use href="#i-back"/></svg><span class="sr">被リンク数</span></dt><dd id="gLinks">139</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="panel-head" title="リンク元（上位）"><svg class="icon icon-sm"><use href="#i-back"/></svg><span class="sr">リンク元（上位）</span></div>
+      <div class="panel-body" id="gList">
+        <button class="li"><span class="t">2026-08-20_日報テンプレの整理_5d1c8e70</span><span class="s">02_ClaudeLogs</span></button>
+        <button class="li"><span class="t">2026-07-28_週次レビューの手順を決める_a3c81b52</span><span class="s">02_ClaudeLogs</span></button>
+        <button class="li"><span class="t">2026-07-26_Orbitのタグ名を揃える手順_9c1f7a04</span><span class="s">02_ClaudeLogs</span></button>
+        <button class="li"><span class="t">2026-07-10_Orbitの通知が多すぎる問題_1d76c4be</span><span class="s">02_ClaudeLogs</span></button>
+        <button class="more" title="ほか 135 件" aria-label="ほか 135 件"><svg class="icon icon-sm"><use href="#i-more"/></svg><span class="badge">135</span></button>
+      </div>
+    </div>
+  </aside>
+</section>
+
+</main>
+</div>
+</div>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+  var root = document.documentElement, body = document.body;
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("themeBtn");
+  function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function read(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  var saved = read("onyx-theme");
+  if(saved === "dark" || saved === "light") root.setAttribute("data-theme", saved);
+  function currentTheme(){
+    var attr = root.getAttribute("data-theme");
+    if(attr) return attr;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  themeBtn.addEventListener("click", function(){
+    var next = currentTheme() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    store("onyx-theme", next);
+    themeBtn.setAttribute("aria-label", next === "dark" ? "ライトテーマに切り替え" : "ダークテーマに切り替え");
+  });
+
+  /* ---------- screen tabs ---------- */
+  var crumbs = {
+    notes: ["02_ClaudeLogs","2026-07-28_週次レビューの手順を決める_a3c81b52"],
+    daily: ["00_Daily / 2026 / 08","20"],
+    search: ["Orbit"],
+    graph: ["148 / 361"]
+  };
+  var crumb = document.getElementById("crumb");
+  var crumbIcon = { search:"#i-search", graph:"#i-graph" };
+  function svgIcon(href){
+    var s = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    s.setAttribute("class","icon");
+    var u = document.createElementNS("http://www.w3.org/2000/svg","use");
+    u.setAttribute("href", href); s.appendChild(u);
+    return s;
+  }
+  function setCrumb(parts, icon){
+    crumb.textContent = "";
+    if(icon) crumb.appendChild(svgIcon(icon));
+    parts.forEach(function(p,i){
+      if(icon ? i > 0 : true) crumb.appendChild(svgIcon("#i-chev"));
+      var span = document.createElement("span");
+      span.className = (i === parts.length - 1) ? "crumb-cur" : "crumb-dir";
+      span.textContent = p; crumb.appendChild(span);
+    });
+  }
+  var tabs = [].slice.call(document.querySelectorAll(".rail-btn[data-screen]"));
+  var backBtn = document.getElementById("backBtn"), fwdBtn = document.getElementById("fwdBtn");
+  var hist = ["notes"], hi = 0;
+  function syncNav(){
+    backBtn.disabled = hi <= 0;
+    fwdBtn.disabled = hi >= hist.length - 1;
+    backBtn.dataset.tip = backBtn.disabled ? "戻る" : "戻る: " + label(hist[hi-1]);
+    fwdBtn.dataset.tip  = fwdBtn.disabled  ? "進む" : "進む: " + label(hist[hi+1]);
+  }
+  function label(n){ return ({notes:"ノート",daily:"デイリー",search:"検索",graph:"グラフ"})[n] || n; }
+  function go(name){
+    if(hist[hi] === name){ activate(name); return; }
+    hist = hist.slice(0, hi + 1);
+    hist.push(name); hi = hist.length - 1;
+    activate(name);
+  }
+  backBtn.addEventListener("click", function(){ if(hi > 0){ hi--; activate(hist[hi]); } });
+  fwdBtn.addEventListener("click", function(){ if(hi < hist.length - 1){ hi++; activate(hist[hi]); } });
+  function activate(name){
+    tabs.forEach(function(t){
+      var on = t.dataset.screen === name;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+    });
+    [].forEach.call(document.querySelectorAll(".screen"), function(s){
+      var on = s.id === "screen-" + name;
+      s.classList.toggle("is-active", on);
+      if(on) s.removeAttribute("hidden"); else s.setAttribute("hidden","");
+    });
+    setCrumb(crumbs[name] || crumbs.notes, crumbIcon[name]);
+    closeDrawers();
+    rightBtn.hidden = !document.querySelector("#screen-" + name + " .panel-r");
+    syncNav();
+    var scr = document.querySelector("#screen-" + name + " .scroll");
+    if(scr) scr.scrollTop = 0;
+  }
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){ go(t.dataset.screen); });
+    t.addEventListener("keydown", function(e){
+      var i = tabs.indexOf(t), n = null;
+      if(e.key === "ArrowRight" || e.key === "ArrowDown") n = tabs[(i+1) % tabs.length];
+      if(e.key === "ArrowLeft" || e.key === "ArrowUp") n = tabs[(i-1+tabs.length) % tabs.length];
+      if(n){ e.preventDefault(); n.focus(); go(n.dataset.screen); }
+    });
+  });
+  tabs.forEach(function(t){ t.tabIndex = t.getAttribute("aria-selected") === "true" ? 0 : -1; });
+
+  /* ---------- file tree ---------- */
+  [].forEach.call(document.querySelectorAll("[data-tree]"), function(btn){
+    btn.addEventListener("click", function(){
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      btn.classList.toggle("is-open", !open);
+      var kids = btn.nextElementSibling;
+      if(kids && kids.classList.contains("kids")) kids.hidden = open;
+    });
+  });
+  [].forEach.call(document.querySelectorAll("#screen-notes .tree button.row:not(.is-folder)"), function(row){
+    row.addEventListener("click", function(){
+      [].forEach.call(document.querySelectorAll("#screen-notes .tree .row.is-active"), function(a){
+        a.classList.remove("is-active"); a.removeAttribute("aria-current");
+      });
+      row.classList.add("is-active"); row.setAttribute("aria-current","page");
+    });
+  });
+
+  /* ---------- frontmatter fold ---------- */
+  var fmT = document.getElementById("fmToggle"), fmB = document.getElementById("fmBlock");
+  if(fmT) fmT.addEventListener("click", function(){
+    var open = fmT.getAttribute("aria-expanded") === "true";
+    fmT.setAttribute("aria-expanded", open ? "false" : "true");
+    fmB.classList.toggle("is-open", !open);
+    fmB.querySelector(".fm-rows").hidden = open;
+  });
+
+  /* ---------- tasks ---------- */
+  [].forEach.call(document.querySelectorAll(".tasks .box"), function(box){
+    function toggle(){
+      var li = box.closest("li"), done = li.classList.toggle("done");
+      box.setAttribute("aria-checked", done ? "true" : "false");
+    }
+    box.addEventListener("click", toggle);
+    box.addEventListener("keydown", function(e){ if(e.key === " " || e.key === "Enter"){ e.preventDefault(); toggle(); } });
+  });
+
+  /* ---------- toggles / facets ---------- */
+  [].forEach.call(document.querySelectorAll(".toggle,.opt"), function(t){
+    t.addEventListener("click", function(){
+      t.setAttribute("aria-pressed", t.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    });
+  });
+  [].forEach.call(document.querySelectorAll(".facet"), function(f){
+    f.addEventListener("click", function(){ f.classList.toggle("on"); });
+  });
+
+  /* ---------- drawers (narrow viewports) ---------- */
+  var drawerBtn = document.getElementById("drawerBtn"),
+      rightBtn  = document.getElementById("rightBtn"),
+      scrim     = document.getElementById("scrim");
+  function closeDrawers(){
+    body.classList.remove("drawer-open","right-open");
+    drawerBtn.setAttribute("aria-expanded","false");
+    rightBtn.setAttribute("aria-pressed","false");
+  }
+  drawerBtn.addEventListener("click", function(){
+    var open = !body.classList.contains("drawer-open");
+    closeDrawers();
+    body.classList.toggle("drawer-open", open);
+    drawerBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  rightBtn.addEventListener("click", function(){
+    var open = !body.classList.contains("right-open");
+    closeDrawers();
+    body.classList.toggle("right-open", open);
+    rightBtn.setAttribute("aria-pressed", open ? "true" : "false");
+  });
+  scrim.addEventListener("click", closeDrawers);
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeDrawers(); });
+
+  /* ---------- graph ---------- */
+  var svg = document.getElementById("graphSvg");
+  if(svg){
+    var gz = document.getElementById("gZoom"), k = 1, focus = null;
+    function zoom(next){
+      k = Math.min(2.2, Math.max(0.55, next));
+      gz.setAttribute("transform","translate(480 300) scale(" + k.toFixed(3) + ") translate(-480 -300)");
+    }
+    document.getElementById("zoomIn").addEventListener("click", function(){ zoom(k * 1.2); });
+    document.getElementById("zoomOut").addEventListener("click", function(){ zoom(k / 1.2); });
+    document.getElementById("zoomFit").addEventListener("click", function(){ zoom(1); });
+
+    var edges = [].slice.call(svg.querySelectorAll(".edge")),
+        nodes = [].slice.call(svg.querySelectorAll(".node"));
+    function clearFocus(){
+      svg.classList.remove("focusing");
+      edges.forEach(function(e){ e.classList.remove("hit"); });
+      nodes.forEach(function(n){ n.classList.remove("hit"); });
+      focus = null;
+    }
+    function focusNode(g){
+      var id = g.dataset.id;
+      if(focus === id){ clearFocus(); return; }
+      clearFocus();
+      focus = id;
+      svg.classList.add("focusing");
+      g.classList.add("hit");
+      edges.forEach(function(e){
+        if(e.dataset.a === id || e.dataset.b === id){
+          e.classList.add("hit");
+          var other = e.dataset.a === id ? e.dataset.b : e.dataset.a;
+          var on = svg.querySelector('.node[data-id="' + other + '"]');
+          if(on) on.classList.add("hit");
+        }
+      });
+      var nm = document.getElementById("gName"), pa = document.getElementById("gPath"), li = document.getElementById("gLinks");
+      if(nm && g.dataset.name){
+        nm.textContent = g.dataset.name;
+        pa.textContent = g.dataset.path || "—";
+        li.textContent = g.dataset.links || "0";
+      }
+    }
+    nodes.forEach(function(g){
+      g.addEventListener("click", function(){ focusNode(g); });
+      g.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); focusNode(g); } });
+    });
+    svg.addEventListener("click", function(e){ if(e.target === svg || e.target.id === "gZoom") clearFocus(); });
+  }
+
+  /* ---------- sliders (label read-out only) ---------- */
+  [].forEach.call(document.querySelectorAll(".slider input"), function(inp){
+    var out = inp.parentNode.querySelector("label > span:last-child");
+    inp.addEventListener("input", function(){
+      var v = Number(inp.value);
+      if(inp.id === "s1") out.textContent = (0.4 + v / 100 * 1.6).toFixed(1);
+      else if(inp.id === "s2") out.textContent = Math.round(60 + v * 3);
+      else out.textContent = (v / 50).toFixed(1);
+    });
+  });
+
+  setCrumb(crumbs.notes);
+  syncNav();
+
+  /* Alt+←/→ もブラウザ同様に戻る/進む */
+  document.addEventListener("keydown", function(e){
+    if(!e.altKey) return;
+    if(e.key === "ArrowLeft" && !backBtn.disabled){ e.preventDefault(); backBtn.click(); }
+    if(e.key === "ArrowRight" && !fwdBtn.disabled){ e.preventDefault(); fwdBtn.click(); }
+  });
+})();
+</script>
+
+<!-- icon vocabulary =========================================================
+     apps/web/src/components/icons/ の設計書。24px グリッド / fill:none /
+     stroke:currentColor / stroke-width:1.75 / linecap+linejoin:round。
+     「同じ概念には必ず同じアイコン」を守ること。
+
+     ── 構造・ナビゲーション
+     i-chev        Chevron        開閉トグル・パンくずの区切り
+     i-arrow-left  ArrowLeft      履歴を戻る
+     i-arrow-right ArrowRight     履歴を進む
+     i-menu        Menu           ファイルツリー（スマホのドロワー開閉）
+     i-panel       PanelRight     右サイドバーの開閉
+     i-more        MoreHorizontal 省略された残り件数（数字バッジと併用）
+     i-target      Target         現在地へ / 全体表示（フォーカスを戻す）
+
+     ── vault の対象物（Obsidian の語彙に合わせる）
+     i-note        FileText       ノート（.md ファイル）
+     i-folder      Folder         フォルダ / パス
+     i-newnote     FilePlus       新規ノート
+     i-template    TemplateFrame  テンプレート（98_templates）
+     i-hash        Hash           タグ（#tag・frontmatter の tags）
+     i-link        Link           リンク（発リンク）
+     i-back        CornerDownRight バックリンク（被リンク・リンク元）
+     i-unlinked    BrokenLink     リンクされていないメンション
+     i-unresolved  DashedCircle   未作成ノート / 未作成リンク
+     i-node        Circle         グラフのノード数
+     i-edge        Edge           グラフのエッジ数
+     i-orphan      Disconnected   孤立ノート
+
+     ── メタデータ（frontmatter のキーはこのアイコンで置換）
+     i-type        TypeT          title / 文字数
+     i-cal         Calendar       date / デイリーノート / 期間
+     i-clock       Clock          created・更新日時 / 最近
+     i-key         Key            session_id
+     i-git         GitBranch      blob ハッシュ・GitHub オブジェクト
+     i-sync        RefreshCw      GitHub 同期状態
+     i-info        Info           プロパティ / ファイル情報 / 統計 / note callout
+
+     ── 機能
+     i-search      Search         検索
+     i-list        List           アウトライン
+     i-graph       Share          グラフビュー / 選択中のノード
+     i-filter      Funnel         フィルタ
+     i-sliders     Sliders        設定 / 表示の調整
+     i-sort        SortDesc       並び順
+     i-check       Check          タスクのチェック
+     i-alert       AlertTriangle  warning callout
+     i-mark        Highlight      検索の一致件数
+     i-clip        Paperclip      添付ファイル
+     i-plus/i-minus PlusMinus     ズーム
+     i-sun/i-moon  Sun/Moon       ライト / ダークテーマ
+
+     ── 検索オプション（VS Code の語彙に準拠）
+     i-case        Aa             大文字小文字を区別
+     i-regex       .*             正規表現
+     i-fulltext    FileSearch     本文も検索
+
+     ── グラフの力学パラメータ
+     i-nodesize    TwoCircles     ノードサイズ
+     i-distance    LeftRight      リンク距離
+     i-repulse     Expand         反発力
+
+     ラベルの扱い: 画面上の文字は出さず、
+       - 操作要素 … aria-label（必須）+ ヘッダー/レールは .tip の自作ツールチップ、
+                     パネル内は title 属性（スクロールコンテナでの見切れを避けるため）
+       - 非操作要素 … <span class="sr"> の視覚的非表示テキスト + title 属性
+     で意味を保持する。
+     ========================================================================= -->
+</html>

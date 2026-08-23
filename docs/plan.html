@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onyx 実装プラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700&family=M+PLUS+1+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa; --surface: #ffffff; --surface-2: #f1f2f4; --border: #e2e4e8;
+    --text: #1f2328; --text-2: #5b6470; --text-3: #8b949e;
+    --accent: #0050d1; --accent-bg: #e8efff; --accent-text: #003fa6;
+    --ok: #1a7f37; --ok-bg: #e6f6ea; --warn: #9a6700; --warn-bg: #fff6dc; --bad: #b42318; --bad-bg: #fde8e6;
+    --code-bg: #f4f5f7; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+    --radius: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #141517; --surface: #1c1e21; --surface-2: #25282c; --border: #33373d;
+    --text: #e6e8eb; --text-2: #a8b0ba; --text-3: #737c87;
+    --accent: #6ea0ff; --accent-bg: #1a2a4d; --accent-text: #a8c4ff;
+    --ok: #5ccb7a; --ok-bg: #16301d; --warn: #e6b84a; --warn-bg: #332a10; --bad: #ff7b6b; --bad-bg: #3a1a16;
+    --code-bg: #111214; --shadow: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141517; --surface: #1c1e21; --surface-2: #25282c; --border: #33373d;
+      --text: #e6e8eb; --text-2: #a8b0ba; --text-3: #737c87;
+      --accent: #6ea0ff; --accent-bg: #1a2a4d; --accent-text: #a8c4ff;
+      --ok: #5ccb7a; --ok-bg: #16301d; --warn: #e6b84a; --warn-bg: #332a10; --bad: #ff7b6b; --bad-bg: #3a1a16;
+      --code-bg: #111214; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "M PLUS 1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    font-size: 16px; line-height: 1.8; -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: "M PLUS 1 Code", "SFMono-Regular", Menlo, Consolas, monospace; }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+  nav.toc {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 28px 18px;
+    border-right: 1px solid var(--border); background: var(--surface); font-size: 13.5px;
+  }
+  nav.toc .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; margin-bottom: 18px; }
+  nav.toc .brand svg { width: 22px; height: 22px; }
+  nav.toc a { display: block; color: var(--text-2); padding: 5px 8px; border-radius: 6px; line-height: 1.5; }
+  nav.toc a:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
+  nav.toc .sub a { padding-left: 20px; font-size: 12.5px; }
+  nav.toc .theme { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  button.tbtn {
+    display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12.5px; color: var(--text-2);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; cursor: pointer;
+  }
+  button.tbtn svg { width: 16px; height: 16px; }
+
+  main { padding: 48px 56px 96px; max-width: 980px; }
+  header.hero { margin-bottom: 36px; }
+  .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .06em; font-size: 12px; text-transform: uppercase; }
+  h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 8px; letter-spacing: -.01em; }
+  .lede { color: var(--text-2); font-size: 16.5px; max-width: 70ch; margin: 0; }
+  .meta { color: var(--text-3); font-size: 13px; margin-top: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+
+  section { margin-top: 56px; scroll-margin-top: 24px; }
+  h2 { font-size: 23px; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: -.01em; }
+  h3 { font-size: 17px; margin: 28px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { padding-left: 1.4em; margin: 0 0 12px; } li { margin: 2px 0; }
+  li > ul { margin-top: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 14px 0; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 14px 0; }
+  .card h4 { margin: 0 0 6px; font-size: 15px; }
+  .card p, .card ul { font-size: 14px; color: var(--text-2); margin-bottom: 6px; }
+  .stat { font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; }
+  .stat small { display: block; font-size: 12.5px; color: var(--text-3); font-weight: 400; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0 18px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text-2); font-weight: 500; font-size: 13px; background: var(--surface-2); }
+  td:first-child { white-space: nowrap; font-weight: 500; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .tbl-wrap table { margin: 0; }
+
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; border: 1px solid transparent; line-height: 1.7; vertical-align: middle; white-space: nowrap; }
+  .pill.acc { background: var(--accent-bg); color: var(--accent-text); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .pill.ghost { border-color: var(--border); color: var(--text-2); }
+
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.65; margin: 12px 0 16px; }
+  code { background: var(--code-bg); border-radius: 4px; padding: 1px 5px; font-size: .9em; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-bg); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 14.5px; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-bg); }
+  .callout b { display: block; margin-bottom: 2px; }
+
+  /* architecture diagram */
+  .arch { display: grid; grid-template-columns: 1fr 32px 1fr 32px 1fr; gap: 0; align-items: stretch; margin: 16px 0 8px; }
+  .arch .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); font-size: 13.5px; }
+  .arch .box h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .arch .box h4 svg { width: 18px; height: 18px; color: var(--accent); }
+  .arch .box ul { padding-left: 1.1em; margin: 0; color: var(--text-2); font-size: 13px; }
+  .arch .arrow { display: flex; align-items: center; justify-content: center; color: var(--text-3); }
+  .arch .arrow svg { width: 22px; height: 22px; }
+  .arch .sub { margin-top: 8px; font-size: 12px; color: var(--text-3); }
+  @media (max-width: 760px) { .arch { grid-template-columns: 1fr; } .arch .arrow { transform: rotate(90deg); padding: 4px 0; } }
+
+  /* phases */
+  .phase { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px dashed var(--border); }
+  .phase:last-child { border-bottom: 0; }
+  .phase .num { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .04em; padding-top: 4px; }
+  .phase h4 { margin: 0 0 4px; font-size: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .phase .goal { color: var(--text-2); font-size: 14px; margin-bottom: 8px; }
+  .phase ul { font-size: 14px; margin: 0; }
+
+  .route { display: grid; grid-template-columns: 260px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .route:last-child { border-bottom: 0; }
+  .route code { font-size: 13px; }
+  .route span { color: var(--text-2); }
+
+  .kv { display: grid; grid-template-columns: 160px 1fr; gap: 6px 14px; font-size: 14px; }
+  .kv dt { color: var(--text-2); } .kv dd { margin: 0; }
+  .tree { font-size: 13px; line-height: 1.6; }
+  .tree .c { color: var(--text-3); }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+    nav.toc .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    main { padding: 28px 20px 64px; }
+    h1 { font-size: 27px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M12 2.5 20.5 8v8L12 21.5 3.5 16V8L12 2.5Z"/><path d="M12 2.5v19M3.5 8 12 12l8.5-4"/></svg>
+    Onyx プラン
+  </div>
+  <div class="links">
+    <a href="#summary">0. 要約</a>
+    <a href="#vault">1. 対象 vault の分析</a>
+    <a href="#stack">2. 技術スタック</a>
+    <a href="#arch">3. アーキテクチャ</a>
+    <a href="#features">4. 機能一覧と優先度</a>
+    <a href="#md">5. Markdown パイプライン</a>
+    <a href="#api">6. API とルーティング</a>
+    <a href="#structure">7. ディレクトリ構成</a>
+    <a href="#phases">8. 実装フェーズ</a>
+    <a href="#agents">9. エージェント分担</a>
+    <a href="#risks">10. リスクと判断</a>
+    <a href="#verify">11. 検証と完了条件</a>
+    <a href="#devices">12. 対応端末とナビゲーション</a>
+    <a href="#db">13. DB について(使わない)</a>
+  </div>
+  <div class="theme">
+    <button class="tbtn" id="themeBtn" aria-label="テーマ切替">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9c0-.5 0-1-.1-1.4A6 6 0 0 1 13.4 3.1 9 9 0 0 0 12 3Z"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Implementation Plan</div>
+  <h1>Onyx — Obsidian vault を Web で読むためのアプリケーション</h1>
+  <p class="lede">GitHub にバックアップされている <a href="https://github.com/SosukeIto/my-vault">SosukeIto/my-vault</a> を唯一のデータソースとし、Better-T-Stack(Bun / Turborepo / Hono / oRPC / TanStack Router)で「Obsidian と同じ読み心地」をブラウザ上に再現する。</p>
+  <div class="meta">
+    <span>作成: 2026-08-23</span><span>対象 vault コミット: <code class="mono">65df74d</code>(2026-08-22)</span><span>デモ画面: <code>docs/demo.html</code></span>
+  </div>
+</header>
+
+<section id="summary">
+  <h2>0. 要約</h2>
+<div class="callout warn"><b>2026-08-24 改訂: 構成を muscle-memo に揃えた</b>第 2〜3 節と第 8 節の「Hono サーバーが git clone して常駐」という設計は廃止。現行は <b>TanStack Start(SSR + server functions)単体の apps/web を Cloudflare Workers にデプロイ</b>し、vault の内容は GitHub Actions がビルド時に <code>packages/vault</code> で JSON 化した<b>静的アセット</b>(契約: <code>packages/vault/src/static/types.ts</code>)、認証は <b>better-auth + D1</b>(DB は認証にのみ使用)、PWA、Vite+。取得間隔は my-vault の push 時 + 15 分ごとの定期(変更があるときだけビルド)。手順は README を参照。</div>
+  <div class="grid3">
+    <div class="card"><div class="stat">242<small>Markdown ノート(Daily 20 / Note 78 / ClaudeLogs 141 / templates 3)</small></div></div>
+    <div class="card"><div class="stat">208<small><code>[[wikilink]]</code> を含むノート数 — リンク解決とバックリンクが中核機能</small></div></div>
+    <div class="card"><div class="stat">15 MB<small>リポジトリ総量(PNG 7 / PDF 6 を含む)。丸ごと clone しても軽い</small></div></div>
+  </div>
+  <ul>
+    <li><b>データ取得は GitHub API ではなく <code>git clone / pull</code></b>。サーバーが vault を shallow clone してローカルにインデックスを構築する。API レート制限・ファイル数・日本語パスの問題をまとめて回避できる。</li>
+    <li><b>Markdown はサーバー側で HTML に変換</b>し、oRPC でメタデータ(frontmatter / 目次 / リンク / バックリンク)と一緒に返す。Obsidian 独自記法(wikilink・embed・callout・highlight・tag)は自作 remark プラグインで扱う。</li>
+    <li><b>データベースは使わない</b>(2026-08-23 判断)。索引(リンク・バックリンク・タグ・見出し)は同期のたびにメモリ上で再構築する。2.65 MB / 242 ノートなら 1 秒未満で、検索も本文の部分一致走査で数 ms に収まる。</li>
+    <li><b>UI テキストは原則ゼロ</b>(2026-08-23 ユーザー指示)。読む文字はノート本文だけが理想で、パネル見出し・ボタンラベル・ステータス文言はすべて SVG アイコン + tooltip に置き換える。残すのはファイル名・本文・数字と、設定など代替不能なもののみ。</li>
+    <li><b>UI は 3 カラム</b>(ツリー / 本文 / アウトライン+バックリンク)。デザインは designer エージェントが作った <code>docs/demo.html</code> を基準にする。<b>iPhone / Android / iPad / MacBook すべてを対象</b>とし、幅に応じて 1〜3 カラムに組み替える(第 12 節)。</li>
+    <li>フェーズ 1〜2 で「ツリー → ノート → リンクを辿る → 検索」が動く MVP、フェーズ 3 で Daily / Claude ログ / グラフ / タグ、フェーズ 4 で同期 Webhook・認証・デプロイ。</li>
+  </ul>
+</section>
+
+<section id="vault">
+  <h2>1. 対象 vault の分析</h2>
+  <p>クローンして実測した結果。機能の優先度はこの数字から決めている。</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>記法・要素</th><th>含むノート数</th><th>対応方針</th></tr></thead>
+    <tbody>
+      <tr><td><code>[[wikilink]]</code></td><td>208</td><td><span class="pill acc">MVP</span> basename 解決、<code>|alias</code>、<code>#heading</code>、未作成リンクの別表示</td></tr>
+      <tr><td>frontmatter(<code>---</code>)</td><td>164</td><td><span class="pill acc">MVP</span> <code>title / date / created / tags / session_id / project / cssclasses</code> をプロパティ表示</td></tr>
+      <tr><td>表(GFM table)</td><td>130</td><td><span class="pill acc">MVP</span> remark-gfm。横長表は横スクロール</td></tr>
+      <tr><td>タスク <code>- [ ]</code> / <code>- [x]</code></td><td>23 / 8</td><td><span class="pill acc">MVP</span> remark-gfm。Daily Note にはタブインデントの非リスト階層もあり、<code>&lt;pre&gt;</code> 化を避けるため前処理が必要</td></tr>
+      <tr><td>ハイライト <code>==text==</code></td><td>28</td><td><span class="pill acc">MVP</span> 自作 remark プラグイン → <code>&lt;mark&gt;</code></td></tr>
+      <tr><td>タグ <code>#tag</code>(本文中)</td><td>21</td><td><span class="pill ghost">Phase 3</span> タグページへのリンク化。frontmatter の tags は MVP で索引化</td></tr>
+      <tr><td>数式 <code>$$</code></td><td>11</td><td><span class="pill ghost">Phase 3</span> remark-math + rehype-katex(latex-suite 利用者のため)</td></tr>
+      <tr><td>埋め込み <code>![[...]]</code></td><td>5</td><td><span class="pill ghost">Phase 3</span> 画像は <code>&lt;img&gt;</code>、PDF はリンク、ノート埋め込みは HTML インライン</td></tr>
+      <tr><td>Callout <code>&gt; [!type]</code></td><td>2</td><td><span class="pill ghost">Phase 3</span> 種別ごとのアイコンと配色</td></tr>
+      <tr><td><code>```dataview</code> / Templater <code>&lt;% %&gt;</code></td><td>2 / 4</td><td><span class="pill warn">非対応</span> 実行せず「Dataview クエリ」ラベル付きコードブロックとして表示</td></tr>
+      <tr><td><code>cssclasses: vocab</code> + <code>snippets/vocab.css</code></td><td>14</td><td><span class="pill ghost">Phase 3</span> snippet CSS をスコープ付きで読み込み、<code>cssclasses</code> を本文ラッパーに付与</td></tr>
+    </tbody>
+  </table></div>
+  <h3>オーナーの Obsidian 設定(デザインの出発点)</h3>
+  <dl class="kv">
+    <dt>テーマ</dt><dd>Minimal(ベース: moonstone = ライト)</dd>
+    <dt>フォント</dt><dd>M PLUS 1 / M PLUS 1 Code、基本サイズ 20px</dd>
+    <dt>アクセント</dt><dd><code>#0050d1</code></dd>
+    <dt>起動時挙動</dt><dd><code>openBehavior: daily</code> → Web でもホームに「今日の Daily Note」を置く</dd>
+    <dt>同期</dt><dd>obsidian-git が 20 分ごとに自動 push、60 分ごとに pull。Web 側は 5 分間隔の pull で十分</dd>
+    <dt>コアプラグイン</dt><dd>graph / backlink / outgoing-link / outline / daily-notes / page-preview が有効 → Web の右パネル構成に反映</dd>
+  </dl>
+</section>
+
+<section id="stack">
+  <h2>2. 技術スタック(Better-T-Stack の選択)</h2>
+  <pre><code>bunx create-better-t-stack@latest . --directory-conflict merge \
+  --frontend tanstack-router --backend hono --runtime bun --api orpc \
+  --database none --orm none --db-setup none \
+  --auth none --payments none --examples none \
+  --addons turborepo biome lefthook --web-deploy none --server-deploy none \
+  --package-manager bun --install --git --disable-analytics</code></pre>
+  <p style="font-size:13.5px;color:var(--text-2)">上記は <code>--dry-run</code> で検証済み(2026-08-23、create-better-t-stack 最新版)。<code>--web-deploy / --server-deploy</code> を省略すると対話プロンプトになるため明示する。</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>項目</th><th>選択</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td>TanStack Router(Vite SPA)</td><td>SSR 不要(閲覧専用・個人用途)。ファイルベースルートと型付き params で <code>/note/$path</code> を安全に扱える。Next より軽く、ビルドも速い</td></tr>
+      <tr><td>Backend</td><td>Hono + Bun</td><td><code>Bun.spawn</code> で git を実行、起動が速くメモリ索引の再構築に向く。静的ファイル配信(添付画像・PDF)も Hono で完結</td></tr>
+      <tr><td>API</td><td>oRPC</td><td>TanStack Query との統合が公式。OpenAPI も生成できるので将来 CLI/他ツールから叩ける</td></tr>
+      <tr><td>DB</td><td>なし(メモリ索引)</td><td>正本は git。索引は起動時と同期時にメモリ上で再構築する(<code>packages/vault</code> の純粋な TypeScript)。永続化するものが無いので運用が最も単純。規模が 100 倍になっても数百 MB で収まる</td></tr>
+      <tr><td>Auth</td><td>なし(Phase 4 で Better-Auth)</td><td>ローカル運用では不要。公開デプロイ時は <code>bunx create-better-t-stack add</code> で後付けする</td></tr>
+      <tr><td>Addons</td><td>turborepo / biome / lefthook</td><td>モノレポ並列ビルド、lint+format 一本化、pre-commit で <code>bun run check</code></td></tr>
+      <tr><td>Markdown</td><td>unified(remark / rehype)</td><td>プラグイン式で Obsidian 記法を足しやすい。gray-matter で frontmatter</td></tr>
+      <tr><td>UI</td><td>Tailwind v4 + shadcn/ui(テンプレ同梱)</td><td>designer が定義したトークンを CSS 変数として Tailwind に接続する</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><b>代替案を退けた理由</b>GitHub Contents API 方式: 未認証 60 req/h、認証済みでも 243 ファイルの全走査が毎回必要で、バックリンク計算に全文が要るため不向き。Cloudflare Workers: git を実行できず永続ディスクもないため、本プランでは Docker + VPS を前提にする(Workers 化する場合は API 方式 + KV キャッシュに切り替える)。</div>
+</section>
+
+<section id="arch">
+  <h2>3. アーキテクチャ</h2>
+  <div class="arch">
+    <div class="box">
+      <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.2 7.2l7.6 3.6M8.2 16.8l7.6-3.6"/></svg>GitHub: my-vault</h4>
+      <ul><li>obsidian-git が 20 分ごとに push</li><li>Phase 4: push Webhook → <code>/api/sync</code></li></ul>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg></div>
+    <div class="box">
+      <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 14h4"/></svg>apps/server(Hono / Bun)</h4>
+      <ul>
+        <li><b>sync</b>: <code>git clone --depth 1</code> → 5 分ごと <code>git pull</code></li>
+        <li><b>indexer</b>(packages/vault): 全 .md を走査 → frontmatter / リンク / タグ / 見出しをメモリ上の索引に構築(同期ごとに丸ごと再構築)</li>
+        <li><b>renderer</b>: unified で HTML 化(キャッシュ: path + commit)</li>
+        <li><b>oRPC</b>: vault / note / search / daily / graph</li>
+        <li><code>/files/*</code>: 添付画像・PDF 配信</li>
+      </ul>
+      <div class="sub">data/vault(clone)のみ。DB は持たない</div>
+    </div>
+    <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg></div>
+    <div class="box">
+      <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg>apps/web(TanStack Router)</h4>
+      <ul>
+        <li>3 カラム shell(ツリー / 本文 / アウトライン+バックリンク)</li>
+        <li>oRPC + TanStack Query でデータ取得・キャッシュ</li>
+        <li>本文 HTML 内の <code>a[data-wikilink]</code> クリックを Router 遷移に差し替え</li>
+        <li>テーマ(light/dark)、コマンドパレット検索(⌘K)</li>
+      </ul>
+      <div class="sub">designer が作るトークン・アイコン・レイアウトを使用</div>
+    </div>
+  </div>
+  <h3>メモリ索引のデータモデル(TypeScript)</h3>
+  <pre><code>VaultIndex {
+  commit: string; builtAt: Date;
+  notes: Map&lt;path, Note&gt;            // title · folder · frontmatter · body · headings[] · tags[] · modified
+  byBasename: Map&lt;basename, path[]&gt;  // wikilink 解決用
+  links: Link[]                       // from · to(null = 未作成) · target(原文) · alias · heading · kind(wiki|embed|md)
+  backlinks: Map&lt;path, Link[]&gt;       // links から導出
+  tags: Map&lt;tag, path[]&gt;
+  searchText: Map&lt;path, string&gt;      // NFKC 正規化 + 小文字化した title+body(検索用)
+}</code></pre>
+  <p>索引は不変オブジェクトとして作り、同期で commit が変わったときだけ丸ごと作り直して差し替える(差分更新はしない。2.65 MB なら全走査のほうが単純で速い)。検索は <code>searchText</code> の部分一致走査(日本語は形態素解析なしで部分一致が自然)で、ヒット周辺をスニペットとして切り出す。将来ノートが数千件を超えたら bigram 転置索引を <code>packages/vault</code> 内に足すだけでよい。</p>
+</section>
+
+<section id="features">
+  <h2>4. 機能一覧と優先度</h2>
+  <div class="grid2">
+    <div class="card"><h4><span class="pill acc">MVP</span> 閲覧の基本</h4><ul>
+      <li>フォルダツリー(開閉・現在位置ハイライト・長い日本語名の省略)</li>
+      <li>ノート表示(frontmatter プロパティ、見出し、表、タスク、コード、ハイライト)</li>
+      <li>wikilink の解決(既存 / 未作成の描画差、alias、見出しジャンプ)</li>
+      <li>バックリンク・アウトライン(右パネル)</li>
+      <li>添付画像の表示(<code>attachments/</code> 相対解決)</li>
+      <li>全文検索(メモリ上の部分一致、スニペット+ハイライト)</li>
+      <li>同期状態表示(最終同期時刻・コミットハッシュ)と手動同期ボタン</li>
+      <li>戻る / 進む(ヘッダーの ← → ボタン、ブラウザ履歴、スマホのスワイプ戻り)— 第 12 節</li>
+      <li>phone / tablet / desktop のレスポンシブ shell — 第 12 節</li>
+    </ul></div>
+    <div class="card"><h4><span class="pill ghost">Phase 3</span> Obsidian らしさ</h4><ul>
+      <li>Daily Note: カレンダー付きビュー、今日へのショートカット、前後日移動</li>
+      <li>Claude ログ一覧: 日付・プロジェクト(<code>project</code>)・session_id でフィルタ</li>
+      <li>タグページ、未作成ノート一覧(リンク先が無いもの)</li>
+      <li>グラフビュー(d3-force、ローカルグラフ / 全体)</li>
+      <li>callout、数式(KaTeX)、ノート埋め込み、<code>cssclasses</code> + snippet CSS</li>
+      <li>リンクのホバープレビュー(page-preview 相当)</li>
+      <li>⌘K コマンドパレット(ファイル名 fuzzy + 全文)</li>
+    </ul></div>
+    <div class="card"><h4><span class="pill ghost">Phase 4</span> 運用</h4><ul>
+      <li>GitHub Webhook による即時同期(HMAC 検証)</li>
+      <li>認証(Better-Auth、単一ユーザー)— 私的な内容を含むため公開時必須</li>
+      <li>Docker イメージ化、VPS / Fly.io へのデプロイ</li>
+      <li>PWA(オフライン閲覧キャッシュ)</li>
+    </ul></div>
+    <div class="card"><h4><span class="pill bad">非対応(明示)</span></h4><ul>
+      <li>Web からの編集(編集は Obsidian 側。閲覧専用に徹する)</li>
+      <li>Dataview / Templater の実行</li>
+      <li>Canvas(<code>.canvas</code>)の描画</li>
+      <li>Obsidian 独自 URI(<code>obsidian://</code>)</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="md">
+  <h2>5. Markdown パイプライン</h2>
+  <pre><code>gray-matter            frontmatter を分離(title/date/tags/…)
+ └ preprocess          タブ区切りインデント行の正規化、%%コメント%% の除去
+remark-parse → remark-gfm → remark-math → remark-frontmatter
+ └ remark-obsidian     自作: [[link|alias#heading]] / ![[embed]] / ==mark== / #tag / > [!callout]
+remark-rehype → rehype-slug → rehype-katex → rehype-shiki(コード) → rehype-sanitize → rehype-stringify
+ └ 出力: { html, toc[], links[], tags[] }   ※ html は &lt;article data-cssclasses="vocab"&gt; に包む</code></pre>
+  <h3>リンク解決ルール(Obsidian 互換)</h3>
+  <ol>
+    <li><code>[[Daily Note]]</code> → basename 完全一致を全 vault から検索。1 件ならそれ、複数なら参照元に最も近いパス(Obsidian の shortest-path 挙動)</li>
+    <li><code>[[01_Note/03_考え方/アウトラインから書く]]</code> → vault ルート相対パスとして解決</li>
+    <li><code>[[note#見出し]]</code> → <code>rehype-slug</code> と同じスラグ規則でアンカーを付ける</li>
+    <li>解決不能 → <code>&lt;a class="wikilink unresolved"&gt;</code>(薄色・クリックで「未作成ノート」ページへ)</li>
+    <li>添付ファイル <code>![[Pasted image 20260101120000.png]]</code> → 同階層 <code>attachments/</code> → 全 vault の basename 検索の順。URL は <code>/files/&lt;encoded path&gt;</code></li>
+  </ol>
+  <div class="callout warn"><b>Daily Note の独自階層</b><code>00_Daily/2026/08/20.md</code> のように「行頭タブでぶら下げた非リスト行」が多用されている。CommonMark ではタブ 1 つでコードブロック扱いになるため、前処理で「連続する非リスト行のタブインデント」をネストしたリストに変換する(Obsidian の見え方に合わせる)。これは MVP のテスト対象に含める。</div>
+</section>
+
+<section id="api">
+  <h2>6. API とルーティング</h2>
+  <h3>oRPC プロシージャ(apps/server/src/routers/)</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>プロシージャ</th><th>入力</th><th>出力</th></tr></thead>
+    <tbody>
+      <tr><td><code>vault.status</code></td><td>—</td><td>commit, syncedAt, noteCount, branch</td></tr>
+      <tr><td><code>vault.tree</code></td><td>—</td><td>フォルダ/ファイルの再帰ツリー(.obsidian / .gitkeep / attachments は除外)</td></tr>
+      <tr><td><code>vault.sync</code></td><td>token</td><td>pull 結果・再インデックス件数(Phase 4 で Webhook からも呼ぶ)</td></tr>
+      <tr><td><code>note.get</code></td><td>path</td><td>html, frontmatter, toc, outgoing links, backlinks(path+抜粋), tags, modified</td></tr>
+      <tr><td><code>note.list</code></td><td>folder? tag? sort? limit?</td><td>メタデータ一覧(最近更新・フォルダ内一覧・タグ別)</td></tr>
+      <tr><td><code>search.query</code></td><td>q, limit</td><td>タイトル一致 → 本文部分一致の順で、ヒット位置周辺のスニペット付き</td></tr>
+      <tr><td><code>daily.calendar</code></td><td>year, month</td><td>その月に Daily Note がある日付の配列</td></tr>
+      <tr><td><code>graph.data</code></td><td>center? depth?</td><td>nodes[], edges[](全体 / ローカル)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Web ルート(apps/web/src/routes/)</h3>
+  <div>
+    <div class="route"><code>/</code><span>ホーム: 今日の Daily Note(<code>openBehavior: daily</code> に合わせる)+ 最近更新</span></div>
+    <div class="route"><code>/note/$</code><span>ノート表示(splat。<code>encodeURIComponent</code> をセグメント単位で適用)</span></div>
+    <div class="route"><code>/daily</code> · <code>/daily/$date</code><span>カレンダー + Daily Note</span></div>
+    <div class="route"><code>/logs</code><span>Claude ログ一覧(日付降順、project でグループ)</span></div>
+    <div class="route"><code>/search?q=</code><span>検索結果</span></div>
+    <div class="route"><code>/tags/$tag</code><span>タグ別一覧</span></div>
+    <div class="route"><code>/graph</code><span>グラフビュー</span></div>
+    <div class="route"><code>/unresolved</code><span>未作成ノート(リンク先が無いもの)一覧</span></div>
+  </div>
+</section>
+
+<section id="structure">
+  <h2>7. ディレクトリ構成(予定)</h2>
+  <pre class="tree"><code>Onyx/
+├── apps/
+│   ├── web/                         TanStack Router + Vite
+│   │   └── src/
+│   │       ├── routes/              __root.tsx, index.tsx, note.$.tsx, daily/, logs.tsx, search.tsx, graph.tsx
+│   │       ├── components/
+│   │       │   ├── icons/           <span class="c">designer 担当: SVG アイコンコンポーネント(絵文字禁止)</span>
+│   │       │   ├── shell/           AppShell, Sidebar, FileTree, RightPanel, Header
+│   │       │   ├── note/            NoteView, Frontmatter, Outline, Backlinks, WikilinkBoundary
+│   │       │   └── ui/              shadcn/ui(テンプレ同梱)
+│   │       ├── styles/              tokens.css(designer)・prose.css(本文タイポグラフィ)・snippets/
+│   │       └── lib/                 orpc client, theme, path utils
+│   └── server/                      Hono + Bun
+│       └── src/
+│           ├── index.ts             app 起動、/rpc、/files/*、起動時 sync
+│           ├── routers/             vault.ts, note.ts, search.ts, daily.ts, graph.ts
+│           ├── sync/                git.ts(clone/pull)・scheduler.ts
+│           └── state.ts             現在の VaultIndex を保持(同期で差し替え)
+├── packages/
+│   └── vault/                       <span class="c">純粋ロジック(Node/Bun 依存最小)・テストの中心</span>
+│       └── src/
+│           ├── index/               scan.ts, frontmatter.ts, links.ts(解決ルール), tags.ts, search.ts
+│           ├── markdown/            pipeline.ts, remark-obsidian.ts, preprocess.ts, toc.ts
+│           └── __tests__/           vault フィクスチャ(実ノートを数件コピー)でスナップショット
+├── docs/                            plan.html(本書)・demo.html(デザイン基準)
+├── .claude/agents/designer.md
+├── CLAUDE.md · turbo.json · biome.json · lefthook.yml · package.json(bun workspaces)
+└── data/                            <span class="c">.gitignore: vault clone</span></code></pre>
+</section>
+
+<section id="phases">
+  <h2>8. 実装フェーズ</h2>
+  <div class="phase">
+    <div class="num">PHASE 0</div>
+    <div><h4>準備 <span class="pill ok">完了</span></h4>
+      <div class="goal">運用ルールとデザイン基準を固める</div>
+      <ul><li><code>CLAUDE.md</code>(マルチエージェント運用ルール)、<code>.claude/agents/designer.md</code></li><li><code>docs/demo.html</code>(designer)、<code>docs/plan.html</code>(本書)</li></ul>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="num">PHASE 1</div>
+    <div><h4>スキャフォールドと基盤 <span class="pill ok">完了 2026-08-23</span></h4>
+      <div class="goal"><code>bun run dev</code> で web / server が起動し、vault が clone されてメモリ索引が構築される</div>
+      <ul>
+        <li>Better-T-Stack で生成(第 2 節のコマンド)、<code>data/</code> を gitignore、<code>.env</code> に <code>VAULT_REPO_URL / VAULT_BRANCH / SYNC_INTERVAL_SEC</code></li>
+        <li><code>packages/vault</code> の骨組みと <code>VaultIndex</code> 型の確定(A・B が共有する公開 API)</li>
+        <li>sync モジュール(clone / fetch+reset / commit 変化検出)と起動時の索引構築</li>
+        <li>designer: <code>tokens.css</code>、AppShell(phone 1 カラム / tablet 2 カラム / desktop 3 カラム)、基本アイコン 14 種(folder, file, search, sun, moon, link, backlink, tag, calendar, graph, sync, chevron, arrow-left, arrow-right)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="num">PHASE 2</div>
+    <div><h4>MVP: 読める・辿れる・探せる <span class="pill ok">完了 2026-08-23</span></h4>
+      <div class="goal">ツリーからノートを開き、wikilink で移動し、バックリンクを見て、検索できる</div>
+      <ul>
+        <li>Markdown パイプライン(remark-obsidian: wikilink / highlight / preprocess)とリンク解決ルール + テスト</li>
+        <li>oRPC: <code>vault.tree / note.get / search.query / vault.status</code></li>
+        <li>web: FileTree、NoteView(本文 + frontmatter + 目次 + バックリンク)、検索ページ、同期インジケータ、戻る/進むボタン(履歴スタック)</li>
+        <li>添付画像配信 <code>/files/*</code>(拡張子ホワイトリスト、パストラバーサル防止)</li>
+        <li>designer: 本文タイポグラフィ(<code>prose.css</code>)、wikilink / mark / 表 / タスクのスタイル、ダークテーマ</li>
+      </ul>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="num">PHASE 3</div>
+    <div><h4>Obsidian らしさ <span class="pill ok">主要部分 完了 2026-08-24</span> <span class="pill ghost">未: ホバープレビュー / cssclasses snippet / j-k 操作</span></h4>
+      <div class="goal">Daily / Claude ログ / タグ / グラフ / callout / 数式 / 埋め込み / ⌘K</div>
+      <ul>
+        <li>Daily カレンダー(<code>daily.calendar</code>)、<code>/logs</code>、<code>/tags/$tag</code>、<code>/unresolved</code></li>
+        <li>グラフビュー(d3-force、ローカル/全体切替)— designer がノード・エッジのビジュアル設計</li>
+        <li>callout / KaTeX / <code>![[embed]]</code> / <code>cssclasses</code> + snippet CSS</li>
+        <li>ホバープレビュー、⌘K パレット、キーボード操作(j/k で前後ノート等)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="num">PHASE 4</div>
+    <div><h4>運用 <span class="pill ghost">0.5〜1 日</span></h4>
+      <div class="goal">外出先から安全に読める</div>
+      <ul>
+        <li>GitHub Webhook(<code>X-Hub-Signature-256</code> 検証)→ <code>vault.sync</code></li>
+        <li>Better-Auth(<code>create-better-t-stack add</code>)、単一ユーザー・招待なし</li>
+        <li>Dockerfile(git 同梱)、<code>docker compose</code>、ヘルスチェック、永続ボリューム <code>data/</code></li>
+        <li>PWA(addon <code>pwa</code>)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="agents">
+  <h2>9. エージェント分担(CLAUDE.md のルールに基づく)</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>担当</th><th>タスク</th><th>方式の根拠</th></tr></thead>
+    <tbody>
+      <tr><td>オーケストレーター</td><td>スキャフォールド実行、env / turbo / biome 設定、<code>VaultIndex</code> 型定義、各フェーズの検証と報告、本書の更新</td><td>設定変更・3 ファイル以内・直列作業 → 直接実装</td></tr>
+      <tr><td>ワーカー A(opus)</td><td><code>packages/vault</code>: インデクサ + Markdown パイプライン + テスト一式</td><td>新規モジュール一式(4 ファイル超)→ (b) コンテキスト保護。ワーカー B と同時起動</td></tr>
+      <tr><td>ワーカー B(opus)</td><td><code>apps/server</code>: sync、oRPC ルーター、<code>/files/*</code></td><td>A とファイルが重ならない → (a) 並列化。A の型は <code>packages/vault</code> の公開 API を先に決めて共有</td></tr>
+      <tr><td>designer</td><td>トークン、アイコン、AppShell、prose.css、グラフのビジュアル、各画面のレイアウト</td><td>見た目に関わる作業はすべて designer(ユーザー指示)</td></tr>
+      <tr><td>ワーカー C(opus)</td><td><code>apps/web</code> のルートとデータ配線(A・B・designer の成果物を結合)</td><td>多数ファイル → (b)。A/B/designer 完了後に起動(ファイル競合を避けるため直列)</td></tr>
+    </tbody>
+  </table></div>
+  <p>各ワーカーへの指示書には「対象ファイルの絶対パス」「完了条件(通るテスト / 動く URL)」「変更一覧のみ返す」「commit しない」を必ず含める。フェーズ末の <code>bun run check / test / build</code> はオーケストレーターが実行する。</p>
+</section>
+
+<section id="risks">
+  <h2>10. リスクと判断</h2>
+  <div class="grid2">
+    <div class="card"><h4>私的情報の露出</h4><p>私的なメモや添付ファイルが含まれる。リポジトリ自体は公開だが、Web アプリを公開する前に認証(Phase 4)を必須にし、それまではローカル(<code>localhost</code>)のみで運用する。</p></div>
+    <div class="card"><h4>日本語・空白・全角記号を含むパス</h4><p><code>会社案内　資料.pdf</code>(全角スペース)のような名前がある。URL はセグメント単位で <code>encodeURIComponent</code>、サーバーは <code>path.normalize</code> 後に vault ルート外を拒否する。</p></div>
+    <div class="card"><h4>リンク解決の曖昧さ</h4><p>同名 basename が複数ある場合の挙動は Obsidian 準拠(最短パス)にし、テストで固定する。解決結果は <code>links.toPath</code> に保存し、UI はそれを信じる。</p></div>
+    <div class="card"><h4>Daily Note の非標準インデント</h4><p>タブぶら下げ行がコードブロック化する問題。前処理で対処するが、完全一致は狙わず「読める」ことを基準にする。</p></div>
+    <div class="card"><h4>メモリ索引のスケール</h4><p>本文をメモリに持つため、ノート数が数万件・数百 MB 規模になると再構築時間とメモリが効いてくる。その時点で bigram 転置索引の追加か、SQLite(FTS5)の導入を再検討する。現状(2.65 MB)では問題にならない。</p></div>
+    <div class="card"><h4>同期の競合</h4><p>obsidian-git は merge 方式で push するため履歴が直線でないことがある。Web 側は <code>git fetch && git reset --hard origin/main</code> で常にリモートを正とする(ローカル変更を持たない)。</p></div>
+  </div>
+</section>
+
+<section id="verify">
+  <h2>11. 検証と完了条件</h2>
+  <ul>
+    <li><b>各フェーズ共通</b>: <code>bun run check</code>(biome + tsc)、<code>bun run test</code>(vitest)、<code>bun run build</code> が通る</li>
+    <li><b>packages/vault のテスト</b>: 実ノート数件をフィクスチャにして、(1) frontmatter 抽出、(2) wikilink の解決(alias / heading / 未作成 / 同名複数)、(3) highlight と preprocess、(4) 目次生成 をスナップショットで固定</li>
+    <li><b>MVP の受け入れ</b>(<code>bun run dev</code> で手動確認):
+      <ul>
+        <li><code>/note/02_ClaudeLogs/2026-07-28_週次レビューの手順を決める_a3c81b52</code> が開き、<code>[[Claude Log]]</code> をクリックすると <code>/note/02_ClaudeLogs/Claude Log</code> に遷移する</li>
+        <li><code>Claude Log</code> のバックリンクに 139 件前後のログが並ぶ</li>
+        <li><code>/search?q=Orbit</code> で 35 件前後ヒットし(grep 実測値)、スニペットにハイライトが付く</li>
+        <li><code>00_Daily/2026/08/20</code> のタスク階層が崩れず、<code>&lt;pre&gt;</code> にならない</li>
+        <li>画像付きノート(<code>01_Note/03_考え方/</code> の attachments)で画像が表示される</li>
+        <li>iPhone(390px)・iPad 縦(820px)・iPad 横(1180px)・MacBook(1440px)の 4 幅で横スクロールが発生せず、左右パネルの開閉が動く</li>
+        <li>リンクを 3 回辿ったあと ← を 3 回押すと元のノートに戻り、→ で進める。スマホの左端スワイプ(ブラウザ標準)でも同じ履歴を辿る</li>
+      </ul>
+    </li>
+    <li><b>デザインの受け入れ</b>: <code>docs/demo.html</code> と実装のスクリーンショットを並べ、トークン(色・フォント・余白)が一致していることを designer がレビューする</li>
+    <li><b>UI テキストの受け入れ</b>: ノート画面で、本文・ファイル名・frontmatter の値・数字以外の文字列が画面上に存在しないこと(設定画面を除く)。スクリーンショットを designer とオーケストレーターがチェックする</li>
+  </ul>
+  <div class="callout"><b>次のアクション</b>この計画とデモ画面の承認後、Phase 1(スキャフォールド)に着手する。スキャフォールドはオーケストレーターが直接実行し、その後ワーカー A・B と designer を同時起動する。</div>
+
+<section id="devices">
+  <h2>12. 対応端末とナビゲーション</h2>
+  <p>Web アプリなので <b>iPhone / Android / iPad / MacBook(およびデスクトップブラウザ)</b> をすべて一級の対象にする。ネイティブアプリは作らず、Phase 4 の PWA でホーム画面追加に対応する。</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>クラス</th><th>幅</th><th>想定端末</th><th>レイアウト</th></tr></thead>
+    <tbody>
+      <tr><td>phone</td><td>&lt; 640px</td><td>iPhone、Android スマホ</td><td>1 カラム。下部タブバー(ノート / デイリー / 検索 / グラフ)。ファイルツリーは左ドロワー、アウトライン・バックリンクはボトムシート。ヘッダーは「メニュー / ← / タイトル(省略) / 同期ドット」に圧縮</td></tr>
+      <tr><td>tablet</td><td>640〜1023px</td><td>iPad 縦(820px)・横(1180px は desktop 扱い)、Android タブレット、Split View 時の Mac</td><td>2 カラム(ツリー + 本文)。右パネルはヘッダーのボタンで本文の上に重ねて表示</td></tr>
+      <tr><td>desktop</td><td>≥ 1024px</td><td>MacBook、iPad 横、外部ディスプレイ</td><td>3 カラム。左右パネルは折りたたみ可能で、状態を localStorage に保存</td></tr>
+    </tbody>
+  </table></div>
+  <h3>実装ルール(designer + ワーカー C)</h3>
+  <ul>
+    <li>レイアウトは <code>grid-template-columns: auto minmax(0, 1fr) auto</code> を基本にし、本文カラムに <code>min-width: 0</code> を必ず付ける(横はみ出しの主因)。<code>pre</code> / <code>table</code> / 長い URL は自分のコンテナ内でスクロール(<code>overflow-x: auto</code>、<code>overflow-wrap: anywhere</code>)</li>
+    <li>高さは <code>100dvh</code>、ヘッダー・タブバーの padding に <code>env(safe-area-inset-*)</code>(iPhone のノッチ/ホームバー対応)</li>
+    <li>タップ領域 44×44px 以上、ホバー依存の UI を作らない(ツリーの開閉・リンクプレビューはタップでも開ける)。<code>@media (hover: hover)</code> でホバー効果をデスクトップ限定にする</li>
+    <li>フォントサイズは本文 16px(phone)/ 17px(tablet 以上)。<code>&lt;meta name="viewport"&gt;</code> で拡大縮小は禁止しない(アクセシビリティ)</li>
+    <li>本文 HTML はサーバーから返るため、画像は <code>max-width: 100%; height: auto</code>、<code>loading="lazy"</code> を rehype 側で付与する</li>
+    <li>検証は 390 / 820 / 1180 / 1440 の 4 幅でヘッドレス Chrome のスクリーンショットを撮って確認する(受け入れ条件に含める)</li>
+    <li><b>UI テキスト最小化</b>: 見出し・ラベル・プレースホルダ・ステータスは文字を持たず、アイコン + <code>aria-label</code> + tooltip で表現する。frontmatter のキー名もアイコン化し、キー名は tooltip に退避。アイコン語彙は designer が <code>components/icons/README.md</code> に一覧化し、同じ概念に同じアイコンを使う</li>
+  </ul>
+  <h3>戻る / 進む(一つ前に見ていたページに戻る)</h3>
+  <ul>
+    <li>TanStack Router は <code>history</code> API を使うので、<b>ブラウザの戻る・iPhone/Android の端スワイプ・Mac のトラックパッド二本指スワイプ</b>はそのまま効く</li>
+    <li>加えて Obsidian と同じ「← →」ボタンをヘッダーに置き、<code>router.history.back() / forward()</code> を呼ぶ。履歴の先頭・末尾では disabled にする(履歴長は <code>history.length</code> と自前スタックで追跡)</li>
+    <li>キーボード: <code>⌘[</code> / <code>⌘]</code>(Obsidian 既定)と <code>Alt+←</code> / <code>Alt+→</code></li>
+    <li>本文中の wikilink クリックはフルリロードせず Router 遷移にするので、履歴に正しく積まれる。スクロール位置は <code>scrollRestoration</code> をルートごとに保存して復元する</li>
+    <li>Phase 3: 「最近開いたノート」リスト(localStorage、最大 50 件)を ⌘K パレットの初期候補に出す</li>
+  </ul>
+</section>
+
+<section id="db">
+  <h2>13. データベースについて(使わない)</h2>
+  <p><b>2026-08-23 のユーザー判断で、Onyx はデータベースを持たない。</b>クラウド DB を Obsidian 側と共有する構想も見送る。</p>
+  <div class="grid3">
+    <div class="card"><div class="stat">2.65 MB<small>vault の Markdown 総量(242 ノート)。最大の 1 ノートは 144 KB</small></div></div>
+    <div class="card"><div class="stat">&lt; 1 秒<small>全ノート走査 + リンク解決によるメモリ索引の再構築時間(見込み)</small></div></div>
+    <div class="card"><div class="stat">0 個<small>永続化するストア。git clone 先のディレクトリだけが状態</small></div></div>
+  </div>
+  <ul>
+    <li>正本は引き続き GitHub の git リポジトリ(obsidian-git の自動 push)。Onyx は読み取り専用で、派生情報はすべてメモリ上に置く</li>
+    <li>ユーザーごとの軽い状態(テーマ、パネル開閉、最近開いたノート、ブックマーク)はブラウザの <code>localStorage</code> に保存する。端末間で共有はしない</li>
+    <li>サーバー再起動で索引は消えるが、起動時に clone 済みディレクトリから即再構築されるため実害はない</li>
+    <li>将来 DB が必要になった場合(数万ノート規模、端末間で共有したい状態の発生)は <code>bunx create-better-t-stack add</code> ではなく、<code>packages/vault</code> の索引インターフェースを保ったまま SQLite/Turso を裏側に差し込む。本プランの API・画面設計はそのまま使える</li>
+  </ul>
+</section>
+</main>
+</div>
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('themeBtn');
+    try { var saved = localStorage.getItem('onyx-plan-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('onyx-plan-theme', next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>
