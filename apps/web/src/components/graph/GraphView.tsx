@@ -117,6 +117,8 @@ export function GraphView({
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [placed, setPlaced] = useState<Record<string, Placed>>({});
   const [view, setView] = useState({ x: 0, y: 0, w: W, h: H });
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const visibleNodes = useMemo(
     () => (showUnresolved ? nodes : nodes.filter((node) => node.kind !== "unresolved")),
@@ -276,8 +278,24 @@ export function GraphView({
     // and turn off page-level scrolling/bounce while the graph is mounted.
     const swallow = (event: TouchEvent) => {
       event.preventDefault();
+      if (event.touches.length === 2) {
+        onPinchMove(event);
+      }
     };
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length === 2) {
+        onPinchStart(event);
+      }
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length < 2) {
+        pinch.current = null;
+      }
+    };
+    host.addEventListener("touchstart", onTouchStart, { passive: true });
     host.addEventListener("touchmove", swallow, { passive: false });
+    host.addEventListener("touchend", onTouchEnd);
+    host.addEventListener("touchcancel", onTouchEnd);
     const root = document.documentElement;
     const previous = {
       overscroll: root.style.overscrollBehavior,
@@ -286,11 +304,77 @@ export function GraphView({
     root.style.overscrollBehavior = "none";
     root.style.overflow = "hidden";
     return () => {
+      host.removeEventListener("touchstart", onTouchStart);
       host.removeEventListener("touchmove", swallow);
+      host.removeEventListener("touchend", onTouchEnd);
+      host.removeEventListener("touchcancel", onTouchEnd);
       root.style.overscrollBehavior = previous.overscroll;
       root.style.overflow = previous.overflow;
     };
   }, []);
+
+  /* ---------- pinch zoom (two fingers) ---------- */
+  const pinch = useRef<{
+    distance: number;
+    midX: number;
+    midY: number;
+    view: { x: number; y: number; w: number; h: number };
+  } | null>(null);
+
+  function touchGeometry(event: TouchEvent) {
+    const [a, b] = [event.touches[0], event.touches[1]];
+    if (!a || !b) {
+      return null;
+    }
+    return {
+      distance: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
+      midX: (a.clientX + b.clientX) / 2,
+      midY: (a.clientY + b.clientY) / 2,
+    };
+  }
+
+  function onPinchStart(event: TouchEvent) {
+    const geometry = touchGeometry(event);
+    if (!geometry) {
+      return;
+    }
+    // A second finger ends any one-finger pan so the two gestures never fight.
+    drag.current = null;
+    pinch.current = { ...geometry, view: viewRef.current };
+  }
+
+  function onPinchMove(event: TouchEvent) {
+    const start = pinch.current;
+    const svg = svgRef.current;
+    const geometry = touchGeometry(event);
+    if (!start || !svg || !geometry || start.distance === 0) {
+      return;
+    }
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const { view: from } = start;
+    const scale = Math.min(rect.width / from.w, rect.height / from.h);
+    const offX = (rect.width - from.w * scale) / 2;
+    const offY = (rect.height - from.h * scale) / 2;
+    // Vault-space point under the initial midpoint stays under the current midpoint.
+    const ux = from.x + (start.midX - rect.left - offX) / scale;
+    const uy = from.y + (start.midY - rect.top - offY) / scale;
+
+    const k = clamp(start.distance / geometry.distance, 0.1, 10);
+    const w = clamp(from.w * k, W / 8, W * 4);
+    const h = (w / from.w) * from.h;
+    const nextScale = Math.min(rect.width / w, rect.height / h);
+    const nextOffX = (rect.width - w * nextScale) / 2;
+    const nextOffY = (rect.height - h * nextScale) / 2;
+    setView({
+      w,
+      h,
+      x: ux - (geometry.midX - rect.left - nextOffX) / nextScale,
+      y: uy - (geometry.midY - rect.top - nextOffY) / nextScale,
+    });
+  }
 
   /* ---------- pan ---------- */
   const drag = useRef<{
