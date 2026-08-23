@@ -1,35 +1,25 @@
-import { Button } from "@Onyx/ui/components/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@Onyx/ui/components/dropdown-menu";
-import { Moon, Sun } from "lucide-react";
-
+import { IconMoon, IconSun } from "@/components/icons";
+import { IconButton } from "@/components/shell/IconButton";
+import { Tooltip } from "@/components/shell/Tooltip";
 import { useTheme } from "@/components/theme-provider";
 
+/**
+ * Single light/dark toggle — no dropdown, no visible wording.
+ * Which glyph shows is decided in CSS (`dark:` variant), so there is no
+ * hydration flash and no client-only state.
+ */
 export function ModeToggle() {
-	const { setTheme } = useTheme();
+	const { resolvedTheme, setTheme } = useTheme();
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
-				<Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-				<Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-				<span className="sr-only">Toggle theme</span>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end">
-				<DropdownMenuItem onClick={() => setTheme("light")}>
-					Light
-				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme("dark")}>
-					Dark
-				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme("system")}>
-					System
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<Tooltip align="end" label="テーマ切替">
+			<IconButton
+				label="ライト / ダークテーマを切り替え"
+				onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+			>
+				<IconMoon className="dark:hidden" size={20} />
+				<IconSun className="hidden dark:block" size={20} />
+			</IconButton>
+		</Tooltip>
 	);
 }

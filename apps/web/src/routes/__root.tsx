@@ -7,8 +7,14 @@ import {
 	Outlet,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
-import Header from "@/components/header";
+import {
+	AppShell,
+	Header,
+	LeftPanel,
+	Rail,
+	RightPanel,
+	TabBar,
+} from "@/components/shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { orpc } from "@/utils/orpc";
 
@@ -28,7 +34,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				name: "description",
-				content: "Onyx is a web application",
+				content: "Obsidian vault (SosukeIto/my-vault) の Web ビューア",
 			},
 		],
 		links: [
@@ -46,14 +52,20 @@ function RootComponent() {
 			<HeadContent />
 			<ThemeProvider
 				attribute="class"
-				defaultTheme="dark"
+				defaultTheme="system"
 				disableTransitionOnChange
-				storageKey="vite-ui-theme"
+				enableSystem
+				storageKey="onyx-theme"
 			>
-				<div className="grid h-svh grid-rows-[auto_1fr]">
-					<Header />
+				<AppShell
+					header={<Header />}
+					left={<LeftPanel />}
+					rail={<Rail active="notes" />}
+					right={<RightPanel />}
+					tabBar={<TabBar active="notes" />}
+				>
 					<Outlet />
-				</div>
+				</AppShell>
 				<Toaster richColors />
 			</ThemeProvider>
 			<TanStackRouterDevtools position="bottom-left" />

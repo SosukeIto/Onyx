@@ -1,1 +1,3 @@
 @import "@Onyx/ui/globals.css";
+@import "./styles/tokens.css";
+@import "./styles/prose.css";

@@ -1,0 +1,676 @@
+/* ============================================================================
+   Onyx — note body typography (`<article class="prose-onyx">`)
+
+   These rules style HTML produced by the server renderer (@Onyx/vault), so the
+   class names below are a CONTRACT with the renderer:
+
+     a.wikilink[data-path]              resolved [[wikilink]]
+     a.wikilink.unresolved[data-target] [[wikilink]] with no target note
+     a.tag[data-tag]                    #tag
+     a.attachment                       link to a non-markdown file
+     div.embed[data-path]               ![[embed]] (header text = data-path)
+     blockquote.callout[data-callout]   > [!note] / info / warning / tip /
+                                        question / quote (+ danger, success…)
+     p.callout-title                    first line of a callout
+     mark                               ==highlight==
+     img                                embedded image (lazy, max-width 100%)
+     .table-wrap > table                horizontally scrollable table
+     .katex / .katex-display            KaTeX math
+
+   Everything is unlayered on purpose so it beats Tailwind's preflight without
+   !important. No horizontal overflow is possible: every wide construct
+   (pre / table / katex) scrolls inside itself and text wraps with
+   `overflow-wrap: anywhere`.
+   ========================================================================== */
+
+:root {
+	--icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.6 4.6 4.6L19 6.8'/%3E%3C/svg%3E");
+	--icon-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.4 13.6a3.6 3.6 0 0 0 5.1 0l3-3a3.6 3.6 0 0 0-5.1-5.1l-1.6 1.6'/%3E%3Cpath d='M13.6 10.4a3.6 3.6 0 0 0-5.1 0l-3 3a3.6 3.6 0 0 0 5.1 5.1l1.6-1.6'/%3E%3C/svg%3E");
+	--icon-hash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.8 3.5 7.6 20.5M16.4 3.5l-2.2 17M4.3 9h15.4M3.6 15H19'/%3E%3C/svg%3E");
+	--icon-clip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.6 11.4 12 19a4.4 4.4 0 0 1-6.2-6.2l8.1-8.1a2.9 2.9 0 0 1 4.2 4.2l-8.1 8.1a1.5 1.5 0 0 1-2.1-2.1l7.5-7.5'/%3E%3C/svg%3E");
+	--icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.6'/%3E%3Cpath d='M12 11.2v5M12 7.8h.01'/%3E%3C/svg%3E");
+	--icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.4 2.9 19.6h18.2z'/%3E%3Cpath d='M12 10v4.2M12 17.2h.01'/%3E%3C/svg%3E");
+	--icon-tip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.2 17.4h5.6M10 20.6h4'/%3E%3Cpath d='M12 2.8a6.2 6.2 0 0 0-3.6 11.3c.5.4.8 1 .8 1.6h5.6c0-.6.3-1.2.8-1.6A6.2 6.2 0 0 0 12 2.8z'/%3E%3C/svg%3E");
+	--icon-question: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.6'/%3E%3Cpath d='M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.6'/%3E%3Cpath d='M12 16.6h.01'/%3E%3C/svg%3E");
+	--icon-quote: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.6 6.4C6.7 7.9 5.2 10.3 5.2 13.6c0 2.4 1.3 4 3.3 4 1.7 0 3-1.2 3-2.9 0-1.6-1.1-2.8-2.7-2.8-.3 0-.6 0-.9.2.3-1.7 1.4-3 3.2-4z'/%3E%3Cpath d='M18.4 6.4c-2.9 1.5-4.4 3.9-4.4 7.2 0 2.4 1.3 4 3.3 4 1.7 0 3-1.2 3-2.9 0-1.6-1.1-2.8-2.7-2.8-.3 0-.6 0-.9.2.3-1.7 1.4-3 3.2-4z'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------- container */
+.prose-onyx {
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	line-height: var(--lh-body);
+	color: var(--text);
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	word-break: normal;
+	line-break: strict;
+}
+
+/* ---------------------------------------------------------------- headings */
+.prose-onyx h1,
+.prose-onyx h2,
+.prose-onyx h3,
+.prose-onyx h4,
+.prose-onyx h5,
+.prose-onyx h6 {
+	line-height: var(--lh-head);
+	font-weight: 700;
+	color: var(--text);
+	scroll-margin-top: calc(var(--h-header) + 16px);
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx h1 {
+	font-size: var(--fs-h1);
+	margin: 0 0 var(--sp-5);
+	letter-spacing: 0.005em;
+}
+
+.prose-onyx h2 {
+	font-size: var(--fs-h2);
+	margin: var(--sp-6) 0 var(--sp-3);
+}
+
+.prose-onyx h3 {
+	font-size: var(--fs-h3);
+	margin: var(--sp-5) 0 var(--sp-2);
+}
+
+.prose-onyx h4,
+.prose-onyx h5,
+.prose-onyx h6 {
+	font-size: 1em;
+	margin: var(--sp-4) 0 var(--sp-2);
+	color: var(--text-muted);
+}
+
+.prose-onyx :is(h1, h2, h3, h4, h5, h6):first-child {
+	margin-top: 0;
+}
+
+/* ------------------------------------------------------------ block basics */
+.prose-onyx p {
+	margin: 0 0 1.05em;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx strong {
+	font-weight: 700;
+}
+
+.prose-onyx em {
+	font-style: italic;
+}
+
+.prose-onyx del {
+	color: var(--text-faint);
+	text-decoration: line-through;
+	text-decoration-thickness: 1px;
+}
+
+.prose-onyx hr {
+	border: 0;
+	border-top: 1px solid var(--border);
+	margin: var(--sp-6) 0;
+}
+
+.prose-onyx > :last-child {
+	margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------- lists */
+.prose-onyx ul,
+.prose-onyx ol {
+	margin: 0 0 1.05em;
+	padding-left: 1.5em;
+}
+
+.prose-onyx ul {
+	list-style: disc;
+}
+
+.prose-onyx ol {
+	list-style: decimal;
+}
+
+.prose-onyx li {
+	margin: 0.25em 0;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx li > ul,
+.prose-onyx li > ol {
+	margin: 0.25em 0 0.4em;
+}
+
+.prose-onyx ul ul {
+	list-style: circle;
+}
+
+.prose-onyx ul ul ul {
+	list-style: square;
+}
+
+.prose-onyx dl {
+	margin: 0 0 1.05em;
+}
+
+.prose-onyx dt {
+	font-weight: 700;
+}
+
+.prose-onyx dd {
+	margin: 0 0 0.5em 1.4em;
+}
+
+/* --------------------------------------------------------------- task list */
+.prose-onyx ul.contains-task-list,
+.prose-onyx ul:has(> li > input[type="checkbox"]) {
+	list-style: none;
+	padding-left: 0;
+}
+
+.prose-onyx li.task-list-item,
+.prose-onyx li:has(> input[type="checkbox"]) {
+	list-style: none;
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	padding: 3px 0;
+	margin: 0;
+	line-height: 1.75;
+}
+
+.prose-onyx input[type="checkbox"] {
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	flex: none;
+	width: 17px;
+	height: 17px;
+	margin: 0;
+	margin-top: 0.42em;
+	border: 1.5px solid var(--border-strong);
+	border-radius: var(--r-sm);
+	background: var(--bg-elev);
+	opacity: 1;
+	cursor: default;
+}
+
+.prose-onyx input[type="checkbox"]:checked {
+	background: var(--accent);
+	border-color: var(--accent);
+}
+
+.prose-onyx input[type="checkbox"]:checked::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-color: var(--accent-contrast);
+	-webkit-mask-image: var(--icon-check);
+	mask-image: var(--icon-check);
+	-webkit-mask-size: 11px;
+	mask-size: 11px;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+.prose-onyx li:has(> input[type="checkbox"]:checked) {
+	color: var(--text-faint);
+	text-decoration: line-through;
+	text-decoration-thickness: 1px;
+}
+
+/* -------------------------------------------------------------------- code */
+.prose-onyx code {
+	font-family: var(--font-code);
+	font-size: 0.86em;
+	background: var(--bg-code);
+	border-radius: var(--r-sm);
+	padding: 1.5px 5px;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx pre {
+	margin: 0 0 1.2em;
+	padding: 14px 16px;
+	max-width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	background: var(--bg-code);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	font-family: var(--font-code);
+	font-size: 13.5px;
+	line-height: 1.75;
+	color: var(--text);
+	tab-size: 2;
+}
+
+.prose-onyx pre code {
+	display: block;
+	padding: 0;
+	background: none;
+	border-radius: 0;
+	font-size: inherit;
+	white-space: pre;
+	overflow-wrap: normal;
+	word-break: normal;
+}
+
+/* ------------------------------------------------------------------ tables */
+.prose-onyx .table-wrap {
+	max-width: 100%;
+	margin: 0 0 1.2em;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+}
+
+.prose-onyx table {
+	/* fallback when the renderer emits a bare <table> with no .table-wrap */
+	display: block;
+	max-width: 100%;
+	margin: 0 0 1.2em;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	border-collapse: collapse;
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.prose-onyx .table-wrap > table {
+	display: table;
+	width: max-content;
+	min-width: 100%;
+	margin: 0;
+	overflow: visible;
+	border: 0;
+}
+
+.prose-onyx th,
+.prose-onyx td {
+	padding: 7px 12px;
+	border: 1px solid var(--border);
+	text-align: left;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx th {
+	background: var(--bg-panel);
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.prose-onyx tbody tr:nth-child(even) td {
+	background: color-mix(in srgb, var(--bg-panel) 55%, transparent);
+}
+
+/* ------------------------------------------------------------------- links */
+.prose-onyx a {
+	color: var(--link);
+	text-decoration: none;
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.12s;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx a:hover {
+	border-bottom-color: currentColor;
+}
+
+/* keeps the strike-through of a completed task running through its links */
+.prose-onyx li:has(> input[type="checkbox"]:checked) a {
+	text-decoration: inherit;
+}
+
+.prose-onyx a.wikilink {
+	color: var(--link);
+	cursor: pointer;
+}
+
+.prose-onyx a.wikilink.unresolved {
+	color: var(--link-unresolved);
+	border-bottom: 1px dashed currentColor;
+	opacity: 0.95;
+}
+
+.prose-onyx a.wikilink.unresolved:hover {
+	border-bottom-style: solid;
+}
+
+.prose-onyx a.attachment {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 4px;
+	color: var(--link);
+}
+
+.prose-onyx a.attachment::before {
+	content: "";
+	align-self: center;
+	flex: none;
+	width: 1em;
+	height: 1em;
+	background-color: currentColor;
+	-webkit-mask-image: var(--icon-clip);
+	mask-image: var(--icon-clip);
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+/* -------------------------------------------------------------------- tags */
+.prose-onyx a.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	height: 24px;
+	padding: 0 10px 0 7px;
+	border: 0;
+	border-radius: var(--r-pill);
+	background: var(--tag-bg);
+	color: var(--tag-text);
+	font-family: var(--font-ui);
+	font-size: var(--fs-sm);
+	line-height: 1;
+	vertical-align: -3px;
+	cursor: pointer;
+}
+
+.prose-onyx a.tag::before {
+	content: "";
+	flex: none;
+	width: 12px;
+	height: 12px;
+	background-color: currentColor;
+	-webkit-mask-image: var(--icon-hash);
+	mask-image: var(--icon-hash);
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+.prose-onyx a.tag:hover {
+	background: color-mix(in srgb, var(--tag-text) 18%, transparent);
+	border-bottom-color: transparent;
+}
+
+/* --------------------------------------------------------------- highlight */
+.prose-onyx mark {
+	background: var(--mark-bg);
+	color: var(--mark-text);
+	border-radius: 2px;
+	padding: 0 2px;
+}
+
+/* -------------------------------------------------------------- blockquote */
+.prose-onyx blockquote {
+	margin: 0 0 1.2em;
+	padding: 2px 0 2px 16px;
+	border-left: 3px solid var(--border-strong);
+	color: var(--text-muted);
+}
+
+.prose-onyx blockquote > :last-child {
+	margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- callouts */
+.prose-onyx blockquote.callout {
+	--cal: var(--callout-note);
+	--cal-icon: var(--icon-info);
+	margin: 0 0 1.2em;
+	padding: 12px 14px;
+	border: 1px solid color-mix(in srgb, var(--cal) 28%, transparent);
+	border-left-width: 1px;
+	border-radius: var(--r-lg);
+	background: color-mix(in srgb, var(--cal) 8%, transparent);
+	color: var(--text);
+}
+
+.prose-onyx blockquote.callout[data-callout="info"] {
+	--cal: var(--callout-info);
+	--cal-icon: var(--icon-info);
+}
+
+.prose-onyx blockquote.callout[data-callout="warning"],
+.prose-onyx blockquote.callout[data-callout="caution"],
+.prose-onyx blockquote.callout[data-callout="attention"] {
+	--cal: var(--callout-warning);
+	--cal-icon: var(--icon-alert);
+}
+
+.prose-onyx blockquote.callout[data-callout="tip"],
+.prose-onyx blockquote.callout[data-callout="hint"],
+.prose-onyx blockquote.callout[data-callout="important"],
+.prose-onyx blockquote.callout[data-callout="success"] {
+	--cal: var(--callout-tip);
+	--cal-icon: var(--icon-tip);
+}
+
+.prose-onyx blockquote.callout[data-callout="question"],
+.prose-onyx blockquote.callout[data-callout="help"],
+.prose-onyx blockquote.callout[data-callout="faq"] {
+	--cal: var(--callout-question);
+	--cal-icon: var(--icon-question);
+}
+
+.prose-onyx blockquote.callout[data-callout="quote"],
+.prose-onyx blockquote.callout[data-callout="cite"] {
+	--cal: var(--callout-quote);
+	--cal-icon: var(--icon-quote);
+}
+
+.prose-onyx blockquote.callout[data-callout="danger"],
+.prose-onyx blockquote.callout[data-callout="error"],
+.prose-onyx blockquote.callout[data-callout="bug"],
+.prose-onyx blockquote.callout[data-callout="failure"] {
+	--cal: var(--callout-danger);
+	--cal-icon: var(--icon-alert);
+}
+
+.prose-onyx .callout-title {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 0 0 6px;
+	color: var(--cal, var(--accent));
+	font-weight: 700;
+	font-size: 15px;
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
+
+.prose-onyx .callout-title::before {
+	content: "";
+	flex: none;
+	width: 17px;
+	height: 17px;
+	background-color: currentColor;
+	-webkit-mask-image: var(--cal-icon, var(--icon-info));
+	mask-image: var(--cal-icon, var(--icon-info));
+	-webkit-mask-size: contain;
+	mask-size: contain;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+.prose-onyx blockquote.callout > :last-child {
+	margin-bottom: 0;
+}
+
+.prose-onyx blockquote.callout p {
+	font-size: 15.5px;
+	line-height: 1.8;
+}
+
+/* ------------------------------------------------------------------- embed */
+.prose-onyx .embed {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: stretch;
+	margin: 0 0 1.2em;
+	padding: 0 0 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--bg-panel);
+	overflow: hidden;
+	min-width: 0;
+}
+
+.prose-onyx .embed::before {
+	content: "";
+	order: 0;
+	flex: none;
+	width: 30px;
+	height: 31px;
+	background-color: var(--text-faint);
+	border-bottom: 1px solid var(--border);
+	-webkit-mask-image: var(--icon-link);
+	mask-image: var(--icon-link);
+	-webkit-mask-size: 13px;
+	mask-size: 13px;
+	-webkit-mask-position: center;
+	mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	mask-repeat: no-repeat;
+}
+
+.prose-onyx .embed::after {
+	content: attr(data-path);
+	order: 1;
+	flex: 1 1 0;
+	min-width: 0;
+	height: 31px;
+	padding-right: 12px;
+	border-bottom: 1px solid var(--border);
+	color: var(--text-muted);
+	font-family: var(--font-ui);
+	font-size: var(--fs-xs);
+	line-height: 30px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.prose-onyx .embed > * {
+	order: 2;
+	flex: 0 0 100%;
+	min-width: 0;
+	margin-left: 16px;
+	margin-right: 16px;
+	font-size: 15px;
+}
+
+.prose-onyx .embed > *:first-child {
+	margin-top: 12px;
+}
+
+.prose-onyx .embed > *:last-child {
+	margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ images */
+.prose-onyx img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 0 0 1.2em;
+	border-radius: var(--r-md);
+	background: var(--bg-sunken);
+}
+
+.prose-onyx p > img,
+.prose-onyx a > img {
+	display: inline-block;
+	margin-bottom: 0;
+	vertical-align: middle;
+}
+
+.prose-onyx figure {
+	margin: 0 0 1.2em;
+	max-width: 100%;
+}
+
+.prose-onyx figcaption {
+	margin-top: 6px;
+	color: var(--text-faint);
+	font-family: var(--font-ui);
+	font-size: var(--fs-sm);
+	text-align: center;
+}
+
+.prose-onyx video,
+.prose-onyx audio,
+.prose-onyx iframe {
+	display: block;
+	max-width: 100%;
+	margin: 0 0 1.2em;
+	border: 0;
+	border-radius: var(--r-md);
+}
+
+/* -------------------------------------------------------------------- math */
+.prose-onyx .katex {
+	font-size: 1.02em;
+	max-width: 100%;
+}
+
+.prose-onyx .katex-display {
+	margin: 1em 0 1.2em;
+	padding: 2px 0 8px;
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: hidden;
+	overscroll-behavior-x: contain;
+}
+
+.prose-onyx .katex-display > .katex {
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------------- footnotes */
+.prose-onyx .footnotes {
+	margin-top: var(--sp-6);
+	padding-top: var(--sp-4);
+	border-top: 1px solid var(--border);
+	font-size: 15px;
+	color: var(--text-muted);
+}
+
+.prose-onyx .footnotes h2 {
+	display: none;
+}
+
+.prose-onyx sup a,
+.prose-onyx .footnote-ref {
+	border-bottom: 0;
+	font-size: 0.8em;
+}
+
+/* ----------------------------------------------------------- phone tuning */
+@media (max-width: 639px) {
+	.prose-onyx pre {
+		font-size: 12.5px;
+		padding: 12px 13px;
+	}
+
+	.prose-onyx table {
+		font-size: 14px;
+	}
+}
