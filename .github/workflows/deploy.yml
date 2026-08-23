@@ -1,15 +1,12 @@
 # Build the static vault bundle + the TanStack Start app and deploy to
 # Cloudflare Workers.
 #
-# Triggers
-#   - push to main            : Onyx のコード変更
-#   - workflow_dispatch       : 手動
-#   - workflow_call           : my-vault 側のワークフローから呼ばれる(vault の push / 15 分ごとの定期)。
-#                               public リポジトリから呼ぶと Actions の分数は呼び出し元(無料・無制限)に計上される
+# Onyx is a public repository, so Actions minutes are free and unlimited:
+#   - push to main      : Onyx のコード変更 → 常にビルド・デプロイ
+#   - schedule (15 min) : my-vault の HEAD を確認し、前回デプロイ時から変わっていればビルド・デプロイ
+#   - workflow_dispatch : 手動(force=true で変更が無くてもデプロイ)
 #
-# Required repository secrets (Onyx): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-# Settings → Actions → General → Access: "Accessible from repositories owned by the user"
-# にしておくと my-vault から workflow_call できる。
+# Required repository secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 name: deploy
 
 on:
@@ -18,44 +15,64 @@ on:
     paths-ignore:
       - "docs/**"
       - "**.md"
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch:
-  workflow_call:
     inputs:
-      vault_ref:
-        description: my-vault の ref(既定 main)
-        type: string
-        default: main
-        required: false
-    secrets:
-      CLOUDFLARE_API_TOKEN:
-        required: true
-      CLOUDFLARE_ACCOUNT_ID:
-        required: true
-      ONYX_READ_TOKEN:
-        description: private の Onyx を checkout するための read 権限 PAT(他リポジトリから呼ぶとき必須)
-        required: false
+      force:
+        description: 変更が無くてもデプロイする
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy
   cancel-in-progress: true
 
+env:
+  VAULT_REPO: SosukeIto/my-vault
+  VAULT_BRANCH: main
+
 jobs:
+  # my-vault の HEAD と Onyx の HEAD を合わせたキーで「デプロイ済みか」を判定する。
+  # 定期実行で両方とも前回と同じならビルドしない(Cloudflare への無駄なデプロイを避ける)。
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      vault_sha: ${{ steps.vault.outputs.sha }}
+      deploy: ${{ steps.decide.outputs.deploy }}
+      key: ${{ steps.decide.outputs.key }}
+    steps:
+      - id: vault
+        run: echo "sha=$(git ls-remote https://github.com/${VAULT_REPO}.git refs/heads/${VAULT_BRANCH} | cut -f1)" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .deployed
+          key: deployed-${{ github.sha }}-${{ steps.vault.outputs.sha }}
+          lookup-only: true
+      - id: decide
+        run: |
+          key="deployed-${{ github.sha }}-${{ steps.vault.outputs.sha }}"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "${{ inputs.force }}" = "true" ] || [ "${{ steps.cache.outputs.cache-hit }}" != "true" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
+    needs: check
+    if: needs.check.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout Onyx
-        uses: actions/checkout@v4
-        with:
-          repository: SosukeIto/Onyx
-          ref: main
-          token: ${{ secrets.ONYX_READ_TOKEN || github.token }}
+      - uses: actions/checkout@v4
 
       - name: Checkout my-vault
         uses: actions/checkout@v4
         with:
-          repository: SosukeIto/my-vault
-          ref: ${{ inputs.vault_ref || 'main' }}
+          repository: ${{ env.VAULT_REPO }}
+          ref: ${{ needs.check.outputs.vault_sha }}
           path: data/vault
           # 全履歴: ノートごとの更新日を git log から取るため
           fetch-depth: 0
@@ -78,6 +95,7 @@ jobs:
         env:
           VAULT_DIR: data/vault
           OUT_DIR: apps/web/public
+          VAULT_BRANCH: ${{ env.VAULT_BRANCH }}
 
       - name: Build web
         run: bun run build
@@ -95,3 +113,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Mark as deployed
+        run: echo "${{ needs.check.outputs.key }}" > .deployed
+      - uses: actions/cache/save@v4
+        with:
+          path: .deployed
+          key: ${{ needs.check.outputs.key }}
