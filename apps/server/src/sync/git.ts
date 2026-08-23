@@ -53,7 +53,9 @@ export async function ensureClone({
 
 	const parent = path.dirname(dir);
 	await mkdir(parent, { recursive: true });
-	await git(["clone", "--depth", "1", "--branch", branch, url, dir], parent);
+	// Full history (the vault is ~15 MB) so that per-file last-modified dates
+	// from `git log` are accurate instead of collapsing onto the tip commit.
+	await git(["clone", "--branch", branch, url, dir], parent);
 	return true;
 }
 
@@ -66,12 +68,13 @@ export async function fetchAndReset(
 	branch: string,
 ): Promise<void> {
 	// The explicit refspec keeps refs/remotes/origin/<branch> in sync even for
-	// shallow clones created with `--branch`.
+	// clones created with `--branch`. `--unshallow` is a no-op on full clones
+	// but upgrades clones made by older versions of this module.
+	const shallow = existsSync(path.join(dir, ".git", "shallow"));
 	await git(
 		[
 			"fetch",
-			"--depth",
-			"1",
+			...(shallow ? ["--unshallow"] : []),
 			"origin",
 			`+${branch}:refs/remotes/origin/${branch}`,
 		],
@@ -88,9 +91,8 @@ export async function headCommit(dir: string): Promise<string> {
 /**
  * Last commit date (ISO 8601) per vault-relative path.
  *
- * The clone is shallow, so only the commits that were actually fetched are
- * visible: files that were last touched by an older commit are simply omitted
- * and end up with `modified: null` in the index.
+ * Files never touched by any visible commit are omitted and end up with
+ * `modified: null` in the index.
  */
 export async function fileDates(dir: string): Promise<Map<string, string>> {
 	const stdout = await git(
