@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1524 598" width="1524" height="598" role="img" aria-label="vault は private な my-vault に残り、GitHub Actions がビルドした静的なノート JSON と添付だけが Cloudflare Workers に届き、ログイン済みの端末だけが Workers 経由でそれを読む構成図" font-family="system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1524 598" width="1524" height="598" role="img" aria-label="構成図" font-family="system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif">
 <title>Onyx のシステム構成</title>
 <defs>
 <marker id="ah" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="10" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#8b95a1"/></marker>
@@ -8,7 +8,7 @@
 <rect x="0" y="0" width="1524" height="598" fill="#ffffff"/>
 <rect x="18" y="24" width="4" height="26" rx="2" fill="#0050d1"/>
 <text x="34" y="45" font-size="24" fill="#1f2328" font-weight="700">Onyx</text>
-<text x="108.7" y="45" font-size="13.5" fill="#6a737d">vault は private のまま GitHub に残り、ビルド済みの静的物だけが Cloudflare Workers に届く</text>
+<text x="108.7" y="45" font-size="13.5" fill="#6a737d">構成図</text>
 <rect x="18" y="84" width="192" height="438" rx="16" fill="none" stroke="#c3ccd6" stroke-width="1.5" stroke-dasharray="7 5"/>
 <rect x="34" y="96" width="117.2" height="25" rx="12.5" fill="#eef2f6"/>
 <text x="45" y="113.5" font-size="14.5" fill="#4a5158" font-weight="700">PC</text>
@@ -109,5 +109,4 @@
 <text x="58" y="552" font-size="12" fill="#6a737d">ビルド・デプロイ時(自動で走る)</text>
 <path d="M263.6 548 h30" fill="none" stroke="#8b95a1" stroke-width="1.8" marker-end="url(#ah)"/>
 <text x="303.6" y="552" font-size="12" fill="#6a737d">配信時(端末のリクエストごと)</text>
-<text x="18" y="578" font-size="12.5" fill="#4a5158">端末から my-vault へも静的アセットへも直接の線はない ― 読み取りは必ず Workers のセッション確認を通る</text>
 </svg>
