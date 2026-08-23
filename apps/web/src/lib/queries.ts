@@ -93,3 +93,11 @@ export function graphOptions(center?: string) {
 		staleTime: DETAIL_STALE_TIME,
 	});
 }
+
+/** Claude logs, newest first; `project` narrows to one project facet. */
+export function logsOptions(project?: string) {
+	return orpc.note.logs.queryOptions({
+		input: { limit: 200, project },
+		staleTime: DETAIL_STALE_TIME,
+	});
+}
