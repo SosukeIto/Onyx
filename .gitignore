@@ -58,6 +58,7 @@ local.db-*
 # Claude Code (agents are shared, local settings are not)
 .claude/*
 !.claude/agents/
+!.claude/CLAUDE.md
 
 # Onyx runtime data (vault clone / build output)
 data/

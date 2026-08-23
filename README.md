@@ -4,7 +4,7 @@
 構成は muscle-memo と同じ: **TanStack Start(SSR)+ Cloudflare Workers + D1/Drizzle + better-auth + PWA、Vite+(vp)**。
 vault の内容は DB に置かず、GitHub Actions がビルド時に索引・HTML を JSON 化して Workers の静的アセットとして配る。UI の文字は最小限で、読む文字はノート本文だけ。
 
-- 設計プラン: [docs/plan.html](docs/plan.html) / デザイン基準: [docs/demo.html](docs/demo.html) / 運用ルール: [CLAUDE.md](CLAUDE.md)
+- 設計プラン: [docs/plan.html](docs/plan.html) / デザイン基準: [docs/demo.html](docs/demo.html) / 運用ルール: [.claude/CLAUDE.md](.claude/CLAUDE.md)
 - アプリの詳細(ローカル手順・D1・シークレット・デプロイ): [apps/web/README.md](apps/web/README.md)
 
 ## ローカルで動かす
