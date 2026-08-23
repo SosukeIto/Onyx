@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@Onyx/api": "workspace:*",
 		"@Onyx/env": "workspace:*",
+		"@Onyx/vault": "workspace:*",
 		"@orpc/openapi": "catalog:",
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",

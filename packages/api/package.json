@@ -12,6 +12,7 @@
 	"scripts": {},
 	"dependencies": {
 		"@Onyx/env": "workspace:*",
+		"@Onyx/vault": "workspace:*",
 		"@orpc/client": "catalog:",
 		"@orpc/openapi": "catalog:",
 		"@orpc/server": "catalog:",

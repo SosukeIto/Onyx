@@ -9,6 +9,8 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { serveVaultFile } from "./files";
+import { startSync, vaultRuntime } from "./sync";
 
 const app = new Hono();
 
@@ -20,6 +22,10 @@ app.use(
 		allowMethods: ["GET", "POST", "OPTIONS"],
 	}),
 );
+
+// Attachments are served before the oRPC handlers so `/files/*` never falls
+// through to the RPC middleware.
+app.get("/files/*", serveVaultFile);
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
 	plugins: [
@@ -43,7 +49,7 @@ export const rpcHandler = new RPCHandler(appRouter, {
 });
 
 app.use("/*", async (c, next) => {
-	const context = await createContext({ context: c });
+	const context = await createContext({ context: c, vault: vaultRuntime });
 
 	const rpcResult = await rpcHandler.handle(c.req.raw, {
 		prefix: "/rpc",
@@ -69,5 +75,8 @@ app.use("/*", async (c, next) => {
 app.get("/", (c) => {
 	return c.text("OK");
 });
+
+// Clone + index the vault. Guarded against `bun --hot` double starts.
+startSync();
 
 export default app;
