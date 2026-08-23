@@ -1,4 +1,9 @@
 {
-	"extends": "@Onyx/config/tsconfig.base.json",
-	"include": ["src"]
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // bun:test / node: 組み込みモジュールの型(packages/vault は Node/Bun 側で動く)
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

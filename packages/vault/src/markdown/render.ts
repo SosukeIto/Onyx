@@ -17,23 +17,22 @@ import { type ObsidianOptions, remarkObsidian } from "./remark-obsidian";
 import { sanitizeSchema } from "./sanitize";
 
 export interface RenderOptions {
-	/** Prefix for note links, default `/note/`. Path segments are URI-encoded. */
-	noteHref?: (path: string) => string;
-	/** Prefix for attachment URLs, default `/files/`. */
-	fileHref?: (path: string) => string;
+  /** Prefix for note links, default `/note/`. Path segments are URI-encoded. */
+  noteHref?: (path: string) => string;
+  /** Prefix for attachment URLs, default `/files/`. */
+  fileHref?: (path: string) => string;
 }
 
 function encodePath(path: string): string {
-	return path.split("/").map(encodeURIComponent).join("/");
+  return path.split("/").map(encodeURIComponent).join("/");
 }
 
 /** `/note/01_Note/…` with the `.md` extension dropped. */
 export const defaultNoteHref = (path: string): string =>
-	`/note/${encodePath(path.replace(/\.md$/i, ""))}`;
+  `/note/${encodePath(path.replace(/\.md$/i, ""))}`;
 
 /** `/files/01_Note/…/image.png` */
-export const defaultFileHref = (path: string): string =>
-	`/files/${encodePath(path)}`;
+export const defaultFileHref = (path: string): string => `/files/${encodePath(path)}`;
 
 const MAX_EMBED_DEPTH = 1;
 
@@ -43,106 +42,99 @@ const MAX_EMBED_DEPTH = 1;
  * that warning).
  */
 const KATEX_OPTIONS = {
-	strict: "ignore",
-	throwOnError: false,
-	output: "htmlAndMathml",
+  strict: "ignore",
+  throwOnError: false,
+  output: "htmlAndMathml",
 } as const;
 
 function baseProcessor(options: ObsidianOptions) {
-	return unified()
-		.use(remarkParse)
-		.use(remarkCjkFriendly)
-		.use(remarkGfm)
-		.use(remarkFrontmatter, ["yaml", "toml"])
-		.use(remarkMath)
-		.use(remarkObsidian, options);
+  return unified()
+    .use(remarkParse)
+    .use(remarkCjkFriendly)
+    .use(remarkGfm)
+    .use(remarkFrontmatter, ["yaml", "toml"])
+    .use(remarkMath)
+    .use(remarkObsidian, options);
 }
 
 function obsidianOptions(
-	index: VaultIndex,
-	fromPath: string,
-	noteHref: (path: string) => string,
-	fileHref: (path: string) => string,
-	depth: number,
+  index: VaultIndex,
+  fromPath: string,
+  noteHref: (path: string) => string,
+  fileHref: (path: string) => string,
+  depth: number,
 ): ObsidianOptions {
-	return {
-		index,
-		fromPath,
-		noteHref,
-		fileHref,
-		renderEmbed:
-			depth >= MAX_EMBED_DEPTH
-				? null
-				: (path: string) => {
-						const note = index.notes.get(path);
-						if (!note) return [];
-						return toHast(
-							index,
-							path,
-							note.body,
-							noteHref,
-							fileHref,
-							depth + 1,
-						);
-					},
-	};
+  return {
+    index,
+    fromPath,
+    noteHref,
+    fileHref,
+    renderEmbed:
+      depth >= MAX_EMBED_DEPTH
+        ? null
+        : (path: string) => {
+            const note = index.notes.get(path);
+            if (!note) return [];
+            return toHast(index, path, note.body, noteHref, fileHref, depth + 1);
+          },
+  };
 }
 
 /** Markdown → hast, without the document-level rehype passes. */
 function toHast(
-	index: VaultIndex,
-	fromPath: string,
-	body: string,
-	noteHref: (path: string) => string,
-	fileHref: (path: string) => string,
-	depth: number,
+  index: VaultIndex,
+  fromPath: string,
+  body: string,
+  noteHref: (path: string) => string,
+  fileHref: (path: string) => string,
+  depth: number,
 ): ElementContent[] {
-	const processor = baseProcessor(
-		obsidianOptions(index, fromPath, noteHref, fileHref, depth),
-	).use(remarkRehype);
-	const mdast = processor.parse(preprocess(body)) as MdastRoot;
-	const hast = processor.runSync(mdast) as unknown as HastRoot;
-	return hast.children as ElementContent[];
+  const processor = baseProcessor(obsidianOptions(index, fromPath, noteHref, fileHref, depth)).use(
+    remarkRehype,
+  );
+  const mdast = processor.parse(preprocess(body)) as MdastRoot;
+  const hast = processor.runSync(mdast) as unknown as HastRoot;
+  return hast.children as ElementContent[];
 }
 
 function textOf(node: unknown): string {
-	if (node === null || typeof node !== "object") return "";
-	const candidate = node as {
-		type?: string;
-		value?: string;
-		children?: unknown[];
-	};
-	if (candidate.type === "text" && typeof candidate.value === "string") {
-		return candidate.value;
-	}
-	if (Array.isArray(candidate.children)) {
-		return candidate.children.map(textOf).join("");
-	}
-	return "";
+  if (node === null || typeof node !== "object") return "";
+  const candidate = node as {
+    type?: string;
+    value?: string;
+    children?: unknown[];
+  };
+  if (candidate.type === "text" && typeof candidate.value === "string") {
+    return candidate.value;
+  }
+  if (Array.isArray(candidate.children)) {
+    return candidate.children.map(textOf).join("");
+  }
+  return "";
 }
 
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 
 function collectHeadings(root: HastRoot, lineOffset: number): Heading[] {
-	const headings: Heading[] = [];
-	const walk = (node: HastRoot | ElementContent): void => {
-		if (node.type === "element" && HEADING_TAGS.has(node.tagName)) {
-			const element: Element = node;
-			const id = element.properties?.id;
-			headings.push({
-				depth: Number(element.tagName.slice(1)) as Heading["depth"],
-				text: textOf(element).trim(),
-				slug: typeof id === "string" ? id : "",
-				line: (element.position?.start.line ?? 1) - 1 + lineOffset,
-			});
-			return;
-		}
-		if ("children" in node) {
-			for (const child of node.children) walk(child as ElementContent);
-		}
-	};
-	walk(root);
-	return headings;
+  const headings: Heading[] = [];
+  const walk = (node: HastRoot | ElementContent): void => {
+    if (node.type === "element" && HEADING_TAGS.has(node.tagName)) {
+      const element: Element = node;
+      const id = element.properties?.id;
+      headings.push({
+        depth: Number(element.tagName.slice(1)) as Heading["depth"],
+        text: textOf(element).trim(),
+        slug: typeof id === "string" ? id : "",
+        line: (element.position?.start.line ?? 1) - 1 + lineOffset,
+      });
+      return;
+    }
+    if ("children" in node) {
+      for (const child of node.children) walk(child as ElementContent);
+    }
+  };
+  walk(root);
+  return headings;
 }
 
 /**
@@ -150,44 +142,36 @@ function collectHeadings(root: HastRoot, lineOffset: number): Heading[] {
  * support. Embedded notes (`![[note]]`) are inlined exactly one level deep.
  */
 export function renderBody(
-	index: VaultIndex,
-	path: string,
-	body: string,
-	options: RenderOptions = {},
-	lineOffset = 0,
+  index: VaultIndex,
+  path: string,
+  body: string,
+  options: RenderOptions = {},
+  lineOffset = 0,
 ): { html: string; headings: Heading[] } {
-	const noteHref = options.noteHref ?? defaultNoteHref;
-	const fileHref = options.fileHref ?? defaultFileHref;
-	const processor = baseProcessor(
-		obsidianOptions(index, path, noteHref, fileHref, 0),
-	)
-		.use(remarkRehype)
-		.use(rehypeSlug)
-		.use(rehypeKatex, KATEX_OPTIONS)
-		.use(rehypeSanitize, sanitizeSchema)
-		.use(rehypeStringify);
-	const mdast = processor.parse(preprocess(body)) as MdastRoot;
-	const hast = processor.runSync(mdast) as unknown as HastRoot;
-	return {
-		html: processor.stringify(hast as never),
-		headings: collectHeadings(hast, lineOffset),
-	};
+  const noteHref = options.noteHref ?? defaultNoteHref;
+  const fileHref = options.fileHref ?? defaultFileHref;
+  const processor = baseProcessor(obsidianOptions(index, path, noteHref, fileHref, 0))
+    .use(remarkRehype)
+    .use(rehypeSlug)
+    .use(rehypeKatex, KATEX_OPTIONS)
+    .use(rehypeSanitize, sanitizeSchema)
+    .use(rehypeStringify);
+  const mdast = processor.parse(preprocess(body)) as MdastRoot;
+  const hast = processor.runSync(mdast) as unknown as HastRoot;
+  return {
+    html: processor.stringify(hast as never),
+    headings: collectHeadings(hast, lineOffset),
+  };
 }
 
 /** Public `renderNote`: looks the note up in the index and renders it. */
 export async function renderNote(
-	index: VaultIndex,
-	path: string,
-	options: RenderOptions = {},
+  index: VaultIndex,
+  path: string,
+  options: RenderOptions = {},
 ): Promise<RenderedNote> {
-	const note = index.notes.get(path);
-	if (!note) throw new Error(`@Onyx/vault: note not found: ${path}`);
-	const { html, headings } = renderBody(
-		index,
-		path,
-		note.body,
-		options,
-		note.bodyLine ?? 0,
-	);
-	return { html, headings, links: note.links, tags: note.tags };
+  const note = index.notes.get(path);
+  if (!note) throw new Error(`@Onyx/vault: note not found: ${path}`);
+  const { html, headings } = renderBody(index, path, note.body, options, note.bodyLine ?? 0);
+  return { html, headings, links: note.links, tags: note.tags };
 }

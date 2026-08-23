@@ -6,10 +6,10 @@ import GithubSlugger, { slug as githubSlug } from "github-slugger";
  * index (including Japanese headings, which are kept verbatim).
  */
 export function slugify(text: string): string {
-	return githubSlug(text);
+  return githubSlug(text);
 }
 
 /** A stateful slugger that appends `-1`, `-2`, … to duplicate headings. */
 export function createSlugger(): GithubSlugger {
-	return new GithubSlugger();
+  return new GithubSlugger();
 }

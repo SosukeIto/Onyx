@@ -25,105 +25,109 @@ export const NOTES_DIR = "/vault/notes";
 export const FILES_DIR = "/files";
 
 export interface NoteSummary {
-	id: string;
-	path: string;
-	title: string;
-	folder: string;
-	tags: string[];
-	/** ISO 8601 or null when git has no history for the file. */
-	modified: string | null;
-	size: number;
+  id: string;
+  path: string;
+  title: string;
+  folder: string;
+  tags: string[];
+  /** ISO 8601 or null when git has no history for the file. */
+  modified: string | null;
+  size: number;
 }
 
 export interface AttachmentRef {
-	id: string;
-	path: string;
-	ext: string;
-	size: number;
-	/** URL of the uploaded asset, e.g. `/files/3f2a9c....png`. */
-	url: string;
+  id: string;
+  path: string;
+  ext: string;
+  size: number;
+  /** URL of the uploaded asset, e.g. `/files/3f2a9c....png`. */
+  url: string;
 }
 
 export interface GraphNode {
-	id: string;
-	title: string;
-	kind: "note" | "unresolved";
-	inDegree: number;
+  id: string;
+  title: string;
+  kind: "note" | "unresolved";
+  inDegree: number;
 }
 
 export interface GraphEdge {
-	source: string;
-	target: string;
+  source: string;
+  target: string;
 }
 
 export interface ClaudeLog {
-	path: string;
-	title: string;
-	date: string | null;
-	created: string | null;
-	project: string | null;
-	sessionId: string | null;
+  path: string;
+  title: string;
+  date: string | null;
+  created: string | null;
+  project: string | null;
+  sessionId: string | null;
 }
 
 export interface VaultManifest {
-	/** Commit of the vault the bundle was built from. */
-	commit: string;
-	/** ISO 8601 build time. */
-	builtAt: string;
-	branch: string;
-	noteCount: number;
-	attachmentCount: number;
-	tree: TreeFolder;
-	/** Every note, keyed by vault path. */
-	notes: Record<string, NoteSummary>;
-	/** Every attachment, keyed by vault path. */
-	attachments: Record<string, AttachmentRef>;
-	tags: Array<{ tag: string; count: number }>;
-	unresolved: Array<{ target: string; count: number; from: string[] }>;
-	graph: { nodes: GraphNode[]; edges: GraphEdge[] };
-	/** `00_Daily/YYYY/MM/DD.md` notes as `{ date: "YYYY-MM-DD", path }`, ascending. */
-	daily: Array<{ date: string; path: string }>;
-	/** `claude-log` notes, newest first, plus the project facet. */
-	logs: {
-		items: ClaudeLog[];
-		projects: Array<{ project: string; count: number }>;
-	};
+  /** Commit of the vault the bundle was built from. */
+  commit: string;
+  /** ISO 8601 build time. */
+  builtAt: string;
+  branch: string;
+  noteCount: number;
+  attachmentCount: number;
+  tree: TreeFolder;
+  /** Every note, keyed by vault path. */
+  notes: Record<string, NoteSummary>;
+  /** Every attachment, keyed by vault path. */
+  attachments: Record<string, AttachmentRef>;
+  tags: Array<{ tag: string; count: number }>;
+  unresolved: Array<{ target: string; count: number; from: string[] }>;
+  graph: { nodes: GraphNode[]; edges: GraphEdge[] };
+  /** `00_Daily/YYYY/MM/DD.md` notes as `{ date: "YYYY-MM-DD", path }`, ascending. */
+  daily: Array<{ date: string; path: string }>;
+  /** `claude-log` notes, newest first, plus the project facet. */
+  logs: {
+    items: ClaudeLog[];
+    projects: Array<{ project: string; count: number }>;
+  };
 }
 
 export interface Backlink {
-	from: string;
-	fromTitle: string;
-	line: number;
-	/** Plain-text excerpt of the line that links here. */
-	excerpt: string;
+  from: string;
+  fromTitle: string;
+  line: number;
+  /** Plain-text excerpt of the line that links here. */
+  excerpt: string;
 }
 
 export interface StaticNote extends NoteSummary {
-	frontmatter: Record<string, unknown>;
-	/** Sanitized HTML; note links point at `/note/<encoded path>`, images at `/files/<id>.<ext>`. */
-	html: string;
-	headings: Heading[];
-	links: Array<Pick<Link, "to" | "target" | "alias" | "kind">>;
-	backlinks: Backlink[];
-	unresolvedTargets: string[];
+  frontmatter: Record<string, unknown>;
+  /** Sanitized HTML; note links point at `/note/<encoded path>`, images at `/files/<id>.<ext>`. */
+  html: string;
+  headings: Heading[];
+  links: Array<Pick<Link, "to" | "target" | "alias" | "kind">>;
+  backlinks: Backlink[];
+  unresolvedTargets: string[];
 }
 
 export interface SearchDoc {
-	path: string;
-	title: string;
-	/** Plain text of the body (markdown syntax stripped, whitespace collapsed). */
-	text: string;
+  path: string;
+  title: string;
+  /** Plain text of the body (markdown syntax stripped, whitespace collapsed). */
+  text: string;
+  /** Vault-relative folder (`""` for the root); the `folder` filter uses it. */
+  folder: string;
+  /** Tags without the leading `#`; the `tag` filter uses them. */
+  tags: string[];
 }
 
 /** Stable ASCII id for a vault path. */
 export async function assetId(path: string): Promise<string> {
-	const bytes = new TextEncoder().encode(path);
-	const digest = await crypto.subtle.digest("SHA-1", bytes);
-	return Array.from(new Uint8Array(digest).slice(0, 8), (b) =>
-		b.toString(16).padStart(2, "0"),
-	).join("");
+  const bytes = new TextEncoder().encode(path);
+  const digest = await crypto.subtle.digest("SHA-1", bytes);
+  return Array.from(new Uint8Array(digest).slice(0, 8), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 export function noteAssetPath(id: string): string {
-	return `${NOTES_DIR}/${id}.json`;
+  return `${NOTES_DIR}/${id}.json`;
 }
