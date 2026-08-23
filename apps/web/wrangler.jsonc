@@ -23,14 +23,14 @@
   "vars": {
     // better-auth のベース URL。ローカル開発では .dev.vars の値が優先される。
     // シークレット(BETTER_AUTH_SECRET)はここではなく wrangler secret put で設定する。
-    "BETTER_AUTH_URL": "https://onyx-web.workers.dev",
+    "BETTER_AUTH_URL": "https://onyx-web.gmtn9200.workers.dev",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "onyx-db",
       // `bunx wrangler d1 create onyx-db` の出力で置換すること。
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "23292dcb-771d-4238-bf65-21734dc1490f",
       // マイグレーション SQL は packages/db が drizzle-kit で生成する(スキーマと同居)。
       // ローカル: bunx wrangler d1 migrations apply onyx-db --local
       // 本番:   bunx wrangler d1 migrations apply onyx-db --remote
