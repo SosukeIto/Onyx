@@ -6,10 +6,21 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+function isNotFound(error: unknown): boolean {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"status" in error &&
+		(error as { status?: unknown }).status === 404
+	);
+}
+
 export function createQueryClient() {
 	return new QueryClient({
 		queryCache: new QueryCache({
 			onError: (error, query) => {
+				// Missing notes are handled by the route's notFound UI; no toast.
+				if (isNotFound(error)) return;
 				toast.error(`Error: ${error.message}`, {
 					action: {
 						label: "retry",

@@ -1,51 +1,72 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { orpc } from "@/utils/orpc";
+import { IconCalendar } from "@/components/icons";
+import Loader from "@/components/loader";
+import { NoteRow, ROW_CLASS, RowContent, ScreenScroll } from "@/lib/list";
+import { formatDate, toISODate } from "@/lib/paths";
+import { calendarOptions, recentOptions } from "@/lib/queries";
+
+const RECENT_LIMIT = 20;
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(recentOptions(RECENT_LIMIT)),
+	pendingComponent: Loader,
 });
 
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
+/**
+ * Link to today's daily note, shown only when the file exists.
+ *
+ * Existence comes from `daily.calendar` rather than a `daily.get` that 404s:
+ * the query cache reports every failure through a toast, and "there is no note
+ * for today yet" is not an error the reader should be told about.
+ */
+function TodayRow() {
+	const now = new Date();
+	const date = toISODate(now);
+	const calendar = useQuery(
+		calendarOptions({ month: now.getMonth() + 1, year: now.getFullYear() }),
+	);
 
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
-
-function HomeComponent() {
-	const healthCheck = useQuery(orpc.healthCheck.queryOptions());
+	const day = calendar.data?.days.find((entry) => entry.date === date);
+	if (!day) {
+		return null;
+	}
 
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-2">
-			<pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
-			<div className="grid gap-6">
-				<section className="rounded-lg border p-4">
-					<h2 className="mb-2 font-medium">API Status</h2>
-					<div className="flex items-center gap-2">
-						<div
-							className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
-						/>
-						<span className="text-muted-foreground text-sm">
-							{healthCheck.isLoading
-								? "Checking..."
-								: healthCheck.data
-									? "Connected"
-									: "Disconnected"}
-						</span>
-					</div>
-				</section>
-			</div>
+		<div className="mb-2 border-line border-b pb-2">
+			<Link
+				className={ROW_CLASS}
+				params={{ date }}
+				title={day.path}
+				to="/daily/$date"
+			>
+				<RowContent
+					icon={<IconCalendar size={16} strokeWidth={1.6} />}
+					sub={day.path}
+					title={date}
+				/>
+			</Link>
 		</div>
+	);
+}
+
+function HomeComponent() {
+	const recent = useQuery(recentOptions(RECENT_LIMIT));
+
+	return (
+		<ScreenScroll>
+			<TodayRow />
+			{recent.data?.map((note) => (
+				<NoteRow
+					key={note.path}
+					meta={formatDate(note.modified)}
+					path={note.path}
+					title={note.title}
+				/>
+			))}
+		</ScreenScroll>
 	);
 }

@@ -4,6 +4,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
+import remarkCjkFriendly from "remark-cjk-friendly";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -50,6 +51,7 @@ const KATEX_OPTIONS = {
 function baseProcessor(options: ObsidianOptions) {
 	return unified()
 		.use(remarkParse)
+		.use(remarkCjkFriendly)
 		.use(remarkGfm)
 		.use(remarkFrontmatter, ["yaml", "toml"])
 		.use(remarkMath)
