@@ -1,3 +1,33 @@
 {
-	"extends": "@Onyx/config/tsconfig.base.json"
+  "compilerOptions": {
+    /* Language & environment */
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "moduleDetection": "force",
+
+    /* Modules (bundler mode) */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    /* Type checking */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": true,
+
+    /* Ambient types: ルート直下のスクリプト類は Bun ランタイムで動く */
+    "types": ["bun"]
+  },
+  // このファイルは apps/* と packages/* が `extends` する共通ベースを兼ねる。
+  // ルート単体でチェックする対象はルート直下のファイルと scripts/ tests/ のみ。
+  "include": ["*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules", "**/dist", "**/.output", "**/.wrangler"]
 }

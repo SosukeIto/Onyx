@@ -1,10 +1,13 @@
-# Lefthook configuration
-# https://github.com/evilmartians/lefthook
-
+# https://lefthook.dev/configuration/
+# `bunx lefthook install` で .git/hooks に登録される。
+# git フックは非対話シェルで走り ~/.zshrc を読まないため、コマンド側で Bun の PATH を通す。
 pre-commit:
   parallel: true
   jobs:
-    - name: biome
-      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: bun biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
-      stage_fixed: true
+    - name: lint
+      glob: "*.{js,jsx,mjs,cjs,ts,tsx}"
+      run: PATH="$HOME/.bun/bin:$PATH" bunx vp lint
+
+    - name: format
+      glob: "*.{js,jsx,mjs,cjs,ts,tsx,json,jsonc,css,md}"
+      run: PATH="$HOME/.bun/bin:$PATH" bunx vp fmt --check
