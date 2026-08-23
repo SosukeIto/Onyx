@@ -14,6 +14,8 @@ import { orpc } from "@/utils/orpc";
 /** The vault only changes on sync, so nothing needs to be re-fetched eagerly. */
 export const DETAIL_STALE_TIME = 5 * 60_000;
 const STATUS_REFETCH_INTERVAL = 60_000;
+/** Hops kept around `?center=` on the graph screen. */
+const GRAPH_DEPTH = 2;
 
 export function noteDetailOptions(path: string | undefined) {
 	return orpc.note.get.queryOptions({
@@ -66,9 +68,28 @@ export function unresolvedOptions() {
 	return orpc.unresolved.list.queryOptions({ staleTime: DETAIL_STALE_TIME });
 }
 
-export function searchOptions(q: string) {
+/** `folder` / `tag` come from the facet column of the search screen. */
+export function searchOptions(
+	q: string,
+	facets?: { folder?: string; tag?: string },
+) {
 	return orpc.search.query.queryOptions({
-		input: q === "" ? skipToken : { q, limit: 50 },
+		input:
+			q === ""
+				? skipToken
+				: { folder: facets?.folder, limit: 50, q, tag: facets?.tag },
+		staleTime: DETAIL_STALE_TIME,
+	});
+}
+
+export function tagsOptions() {
+	return orpc.tags.list.queryOptions({ staleTime: DETAIL_STALE_TIME });
+}
+
+/** Whole vault without `center`; two hops around it with one. */
+export function graphOptions(center?: string) {
+	return orpc.graph.data.queryOptions({
+		input: center ? { center, depth: GRAPH_DEPTH } : {},
 		staleTime: DETAIL_STALE_TIME,
 	});
 }

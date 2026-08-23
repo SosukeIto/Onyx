@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import { IconHash } from "@/components/icons";
+import { NoteList } from "@/components/list";
 import Loader from "@/components/loader";
-import { EmptyScreen, NoteRow, ScreenScroll } from "@/lib/list";
-import { formatDate } from "@/lib/paths";
+import { EmptyScreen, ScreenScroll } from "@/lib/list";
+import { formatDate, stripMd } from "@/lib/paths";
 import { tagNotesOptions } from "@/lib/queries";
 
 export const Route = createFileRoute("/tags/$tag")({
@@ -17,23 +19,33 @@ export const Route = createFileRoute("/tags/$tag")({
 
 function TagRoute() {
 	const { tag } = Route.useParams();
+	const navigate = useNavigate();
 	const notes = useQuery(tagNotesOptions(tag));
 
-	if (notes.data && notes.data.items.length === 0) {
+	const items = useMemo(
+		() =>
+			(notes.data?.items ?? []).map((note) => ({
+				folder: note.folder,
+				modified: formatDate(note.modified),
+				path: note.path,
+				title: note.title,
+			})),
+		[notes.data],
+	);
+
+	if (notes.data && items.length === 0) {
 		return <EmptyScreen icon={<IconHash size={42} strokeWidth={1.3} />} />;
 	}
 
 	return (
 		<ScreenScroll>
-			{notes.data?.items.map((note) => (
-				<NoteRow
-					icon={<IconHash size={16} strokeWidth={1.6} />}
-					key={note.path}
-					meta={formatDate(note.modified)}
-					path={note.path}
-					title={note.title}
-				/>
-			))}
+			<NoteList
+				items={items}
+				leading={() => <IconHash size={15} strokeWidth={1.6} />}
+				onOpen={(path) => {
+					void navigate({ params: { _splat: stripMd(path) }, to: "/note/$" });
+				}}
+			/>
 		</ScreenScroll>
 	);
 }

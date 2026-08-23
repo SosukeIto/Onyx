@@ -2,12 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { IconGit, IconNote, IconSliders, IconSync } from "@/components/icons";
+import {
+	IconClip,
+	IconGit,
+	IconMenu,
+	IconNote,
+	IconPanelRight,
+	IconSliders,
+	IconSync,
+} from "@/components/icons";
 import { ModeToggle } from "@/components/mode-toggle";
+import { IconButton, useAppShell } from "@/components/shell";
 import { formatDateTime, shortCommit } from "@/lib/paths";
 import { statusOptions } from "@/lib/queries";
 
-/** Placeholder. Real settings are Phase 3 — only the vault facts live here. */
+/**
+ * Theme, the panels the app opens with, and the facts about the checkout.
+ * Everything is a glyph plus a value — the only words are in `title`.
+ */
 export const Route = createFileRoute("/settings")({
 	component: SettingsRoute,
 });
@@ -42,22 +54,47 @@ function Row({
 
 function SettingsRoute() {
 	const status = useQuery(statusOptions());
+	// `setLeftOpen` / `setRightOpen` persist to localStorage, so what is toggled
+	// here is exactly what the next visit starts with.
+	const { leftOpen, rightOpen, setLeftOpen, setRightOpen } = useAppShell();
+
+	const commit = shortCommit(status.data?.commit);
 
 	return (
 		<div className="onyx-scroll min-h-0 min-w-0 flex-1">
 			<div className="mx-auto flex w-full min-w-0 max-w-[var(--w-read)] flex-col items-center gap-6 px-6 pt-[12vh] pb-[22vh]">
 				<IconSliders className="text-ink-faint" size={64} strokeWidth={1.1} />
 
-				<ModeToggle />
+				<div className="flex items-center gap-1">
+					<ModeToggle />
+					<IconButton
+						active={leftOpen}
+						label="ファイルツリーを既定で開く"
+						onClick={() => setLeftOpen(!leftOpen)}
+						title="ファイルツリーを既定で開く"
+					>
+						<IconMenu size={20} />
+					</IconButton>
+					<IconButton
+						active={rightOpen}
+						label="サイドパネルを既定で開く"
+						onClick={() => setRightOpen(!rightOpen)}
+						title="サイドパネルを既定で開く"
+					>
+						<IconPanelRight size={20} />
+					</IconButton>
+				</div>
 
 				<dl className="grid w-full max-w-[320px] grid-cols-[22px_minmax(0,1fr)] items-start gap-x-[10px] gap-y-2 text-meta tabular-nums">
 					<Row
 						icon={<IconGit {...GLYPH} />}
-						label="commit"
+						label="ブランチと commit"
 						value={
-							<code className="font-mono text-[11px] text-ink-muted">
-								{shortCommit(status.data?.commit)}
-							</code>
+							commit ? (
+								<code className="font-mono text-[11px] text-ink-muted">
+									{status.data?.branch} · {commit}
+								</code>
+							) : null
 						}
 					/>
 					<Row
@@ -69,6 +106,11 @@ function SettingsRoute() {
 						icon={<IconNote {...GLYPH} />}
 						label="ノート数"
 						value={status.data?.noteCount}
+					/>
+					<Row
+						icon={<IconClip {...GLYPH} />}
+						label="添付ファイル数"
+						value={status.data?.attachmentCount}
 					/>
 				</dl>
 			</div>

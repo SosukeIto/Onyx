@@ -3,6 +3,7 @@ import { type QueryClient, useQuery } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
+	type ErrorComponentProps,
 	HeadContent,
 	Link,
 	Outlet,
@@ -10,8 +11,9 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useCallback, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
+import { IconUnresolved } from "@/components/icons";
 import {
 	AppShell,
 	type BreadcrumbSegment,
@@ -22,12 +24,22 @@ import {
 	Rail,
 	RightPanel,
 	TabBar,
-	useAppShell,
 } from "@/components/shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useActiveHeading } from "@/hooks/use-active-heading";
 import { useActiveNote } from "@/hooks/use-active-note";
 import { useHistoryNav } from "@/hooks/use-history-nav";
+import {
+	useCloseLeftDrawer,
+	useCloseRightOverlay,
+} from "@/hooks/use-panel-dismiss";
+import { EmptyScreen } from "@/lib/list";
+import {
+	LeftPanelSlotHost,
+	PanelSlotsProvider,
+	RightPanelSlotHost,
+	useRightPanelClaimed,
+} from "@/lib/panel-slots";
 import { formatDateTime, navKeyFor, shortCommit, stripMd } from "@/lib/paths";
 import { statusOptions, treeOptions } from "@/lib/queries";
 import type { orpc } from "@/utils/orpc";
@@ -48,19 +60,10 @@ const NAV_TO = {
 	settings: "/settings",
 } as const satisfies Record<NavKey, string>;
 
-const PHONE = "(max-width: 639px)";
-const BELOW_DESKTOP = "(max-width: 1023px)";
-
-function matches(query: string): boolean {
-	try {
-		return window.matchMedia(query).matches;
-	} catch {
-		return false;
-	}
-}
-
 export const Route = createRootRouteWithContext<RouterAppContext>()({
 	component: RootComponent,
+	errorComponent: RootErrorScreen,
+	notFoundComponent: RootNotFoundScreen,
 	head: () => ({
 		meta: [
 			{
@@ -152,17 +155,11 @@ function AppHeader() {
 
 function AppLeftPanel() {
 	const navigate = useNavigate();
-	const { setLeftOpen } = useAppShell();
+	// The panel is a drawer on the phone — opening something has to close it.
+	const closeDrawer = useCloseLeftDrawer();
 	const tree = useQuery(treeOptions());
 	const status = useQuery(statusOptions());
 	const { path } = useActiveNote();
-
-	// The panel is a drawer on the phone — opening something has to close it.
-	const closeDrawer = useCallback(() => {
-		if (matches(PHONE)) {
-			setLeftOpen(false);
-		}
-	}, [setLeftOpen]);
 
 	return (
 		<LeftPanel
@@ -177,22 +174,20 @@ function AppLeftPanel() {
 				void navigate({ to: "/search" });
 			}}
 			tree={tree.data}
-		/>
+		>
+			{/* Calendar (/daily), facets (/search), graph controls (/graph). */}
+			<LeftPanelSlotHost />
+		</LeftPanel>
 	);
 }
 
-function AppRightPanel() {
+/** Outline / backlinks / file facts of the note the shell is showing. */
+function NoteRightPanel() {
 	const navigate = useNavigate();
-	const { setRightOpen } = useAppShell();
+	const closeOverlay = useCloseRightOverlay();
 	const status = useQuery(statusOptions());
 	const { detail } = useActiveNote();
 	const activeSlug = useActiveHeading(detail?.headings);
-
-	const closeOverlay = useCallback(() => {
-		if (matches(BELOW_DESKTOP)) {
-			setRightOpen(false);
-		}
-	}, [setRightOpen]);
 
 	if (!detail) {
 		return <RightPanel />;
@@ -229,6 +224,18 @@ function AppRightPanel() {
 	);
 }
 
+/** A route may take the panel over (the graph screen shows its selection). */
+function AppRightPanel() {
+	const claimed = useRightPanelClaimed();
+
+	return (
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
+			<RightPanelSlotHost />
+			{claimed ? null : <NoteRightPanel />}
+		</div>
+	);
+}
+
 /** ⌘K / Ctrl+K opens the search screen and puts the caret in the field. */
 function useSearchShortcut() {
 	const navigate = useNavigate();
@@ -244,13 +251,30 @@ function useSearchShortcut() {
 			event.preventDefault();
 			void navigate({ to: "/search" }).then(() => {
 				document
-					.querySelector<HTMLInputElement>("input[data-onyx-search]")
+					.querySelector<HTMLInputElement>('input[type="search"]')
 					?.focus();
 			});
 		}
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [navigate]);
+}
+
+/** Anything the route boundaries below did not catch. One glyph, one line. */
+function RootErrorScreen({ error }: ErrorComponentProps) {
+	return (
+		<div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 bg-app px-6 text-ink-faint">
+			<IconUnresolved size={42} strokeWidth={1.3} />
+			<span className="max-w-full text-center text-ink-muted text-ui [overflow-wrap:anywhere]">
+				{error.message}
+			</span>
+		</div>
+	);
+}
+
+/** Shared 404 — it renders inside the shell, so the reader can navigate away. */
+function RootNotFoundScreen() {
+	return <EmptyScreen icon={<IconUnresolved size={42} strokeWidth={1.3} />} />;
 }
 
 function RootComponent() {
@@ -266,15 +290,17 @@ function RootComponent() {
 				enableSystem
 				storageKey="onyx-theme"
 			>
-				<AppShell
-					header={<AppHeader />}
-					left={<AppLeftPanel />}
-					rail={<AppRail />}
-					right={<AppRightPanel />}
-					tabBar={<AppTabBar />}
-				>
-					<Outlet />
-				</AppShell>
+				<PanelSlotsProvider>
+					<AppShell
+						header={<AppHeader />}
+						left={<AppLeftPanel />}
+						rail={<AppRail />}
+						right={<AppRightPanel />}
+						tabBar={<AppTabBar />}
+					>
+						<Outlet />
+					</AppShell>
+				</PanelSlotsProvider>
 				<Toaster richColors />
 			</ThemeProvider>
 			<TanStackRouterDevtools position="bottom-left" />

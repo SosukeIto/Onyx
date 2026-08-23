@@ -1,20 +1,15 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { IconNote, IconUnresolved } from "@/components/icons";
+import { IconUnresolved } from "@/components/icons";
 
 import { cx } from "./cx";
-import { baseNameOf, folderOf, stripMd } from "./paths";
 
 /**
  * Shared chrome for the list screens. `AppShell`'s `<main>` is
  * `overflow-hidden`, so every route owns its vertical scroll — that is what
- * `ScreenScroll` provides.
+ * `ScreenScroll` provides. The rows themselves come from
+ * `components/list/NoteList`.
  */
-
-/** One row of any list screen. Exported so routes can wrap it in their own link. */
-export const ROW_CLASS =
-	"flex min-w-0 items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition-colors hover:border-line hover:bg-hover";
 
 export function ScreenScroll({
 	children,
@@ -33,82 +28,6 @@ export function ScreenScroll({
 			>
 				{children}
 			</div>
-		</div>
-	);
-}
-
-export interface RowProps {
-	icon?: ReactNode;
-	/** File / note name — one of the few places real text belongs. */
-	title: string;
-	/** Folder path under the title. */
-	sub?: string;
-	/** Right-aligned number or date. */
-	meta?: ReactNode;
-	/** Extra block under the title (search snippets). */
-	children?: ReactNode;
-}
-
-export function RowContent({ icon, title, sub, meta, children }: RowProps) {
-	return (
-		<>
-			<span className="flex-none text-ink-faint">
-				{icon ?? <IconNote size={16} strokeWidth={1.6} />}
-			</span>
-			<span className="flex min-w-0 flex-1 flex-col">
-				<span className="min-w-0 truncate font-medium text-ink text-ui">
-					{title}
-				</span>
-				{sub ? (
-					<span className="min-w-0 truncate text-ink-faint text-micro">
-						{sub}
-					</span>
-				) : null}
-				{children}
-			</span>
-			{meta === undefined ? null : (
-				<span className="flex-none self-start pt-0.5 text-ink-muted text-micro tabular-nums">
-					{meta}
-				</span>
-			)}
-		</>
-	);
-}
-
-export interface NoteRowProps extends Omit<RowProps, "title" | "sub"> {
-	/** Vault path, with or without `.md`. */
-	path: string;
-	/** Defaults to the file name. */
-	title?: string;
-	/** Defaults to the folder path. */
-	sub?: string;
-}
-
-/** One note in a list. Navigates with the same URL shape the renderer emits. */
-export function NoteRow({ path, title, sub, ...rest }: NoteRowProps) {
-	return (
-		<Link
-			className={ROW_CLASS}
-			params={{ _splat: stripMd(path) }}
-			title={path}
-			to="/note/$"
-		>
-			<RowContent
-				{...rest}
-				sub={sub ?? folderOf(path)}
-				title={title ?? baseNameOf(path)}
-			/>
-		</Link>
-	);
-}
-
-/** A non-navigating row (unresolved targets have no note to open). */
-export function StaticRow(props: RowProps) {
-	return (
-		<div
-			className={cx(ROW_CLASS, "hover:border-transparent hover:bg-transparent")}
-		>
-			<RowContent {...props} />
 		</div>
 	);
 }

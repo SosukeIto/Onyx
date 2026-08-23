@@ -1,10 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import { IconUnresolved } from "@/components/icons";
+import { NoteList } from "@/components/list";
 import Loader from "@/components/loader";
-import { NoteRow, ScreenScroll, StaticRow } from "@/lib/list";
+import { ScreenScroll } from "@/lib/list";
+import { stripMd } from "@/lib/paths";
 import { unresolvedOptions } from "@/lib/queries";
+
+/** Same id shape the graph uses for a target with no file behind it. */
+const UNRESOLVED_PREFIX = "unresolved:";
 
 export const Route = createFileRoute("/unresolved")({
 	component: UnresolvedRoute,
@@ -13,35 +19,49 @@ export const Route = createFileRoute("/unresolved")({
 	pendingComponent: Loader,
 });
 
-/** Link targets with no file behind them, and the notes that point at them. */
+/**
+ * Link targets with no file behind them. There is nothing to open at the
+ * target itself, so a row leads to the first note that points at it.
+ */
 function UnresolvedRoute() {
+	const navigate = useNavigate();
 	const targets = useQuery(unresolvedOptions());
+
+	const { items, sources } = useMemo(() => {
+		const entries = targets.data ?? [];
+		return {
+			items: entries.map((entry) => ({
+				count: entry.count,
+				path: `${UNRESOLVED_PREFIX}${entry.target}`,
+				title: entry.target,
+			})),
+			sources: new Map(
+				entries.map((entry) => [
+					`${UNRESOLVED_PREFIX}${entry.target}`,
+					entry.from[0],
+				]),
+			),
+		};
+	}, [targets.data]);
 
 	return (
 		<ScreenScroll>
-			{targets.data?.map((entry) => (
-				<div
-					className="border-line border-b pb-1 last:border-b-0"
-					key={entry.target}
-				>
-					<StaticRow
-						icon={
-							<IconUnresolved
-								className="text-link-unresolved"
-								size={16}
-								strokeWidth={1.6}
-							/>
-						}
-						meta={entry.count}
-						title={entry.target}
+			<NoteList
+				items={items}
+				leading={() => (
+					<IconUnresolved
+						className="text-link-unresolved"
+						size={15}
+						strokeWidth={1.6}
 					/>
-					<div className="pl-6">
-						{entry.from.map((path) => (
-							<NoteRow key={path} path={path} />
-						))}
-					</div>
-				</div>
-			))}
+				)}
+				onOpen={(path) => {
+					const from = sources.get(path);
+					if (from) {
+						void navigate({ params: { _splat: stripMd(from) }, to: "/note/$" });
+					}
+				}}
+			/>
 		</ScreenScroll>
 	);
 }
