@@ -19,16 +19,16 @@ import { createLocalAccountIssuer } from "better-auth/db";
 import type { Auth } from "./index";
 
 export interface CreateUserInput {
-	email: string;
-	password: string;
-	name: string;
+  email: string;
+  password: string;
+  name: string;
 }
 
 export interface CreateUserResult {
-	/** 既に同じメールのユーザーが居た場合は false(何も書き込まない) */
-	created: boolean;
-	userId: string;
-	email: string;
+  /** 既に同じメールのユーザーが居た場合は false(何も書き込まない) */
+  created: boolean;
+  userId: string;
+  email: string;
 }
 
 /**
@@ -41,42 +41,42 @@ export interface CreateUserResult {
  * ```
  */
 export async function createUser(
-	auth: Auth,
-	{ email, password, name }: CreateUserInput,
+  auth: Auth,
+  { email, password, name }: CreateUserInput,
 ): Promise<CreateUserResult> {
-	const ctx = await auth.$context;
-	const normalizedEmail = email.trim().toLowerCase();
+  const ctx = await auth.$context;
+  const normalizedEmail = email.trim().toLowerCase();
 
-	const { minPasswordLength, maxPasswordLength } = ctx.password.config;
-	if (password.length < minPasswordLength) {
-		throw new Error(`password must be at least ${minPasswordLength} characters`);
-	}
-	if (password.length > maxPasswordLength) {
-		throw new Error(`password must be at most ${maxPasswordLength} characters`);
-	}
+  const { minPasswordLength, maxPasswordLength } = ctx.password.config;
+  if (password.length < minPasswordLength) {
+    throw new Error(`password must be at least ${minPasswordLength} characters`);
+  }
+  if (password.length > maxPasswordLength) {
+    throw new Error(`password must be at most ${maxPasswordLength} characters`);
+  }
 
-	const existing = await ctx.internalAdapter.findUserByEmail(normalizedEmail);
-	if (existing?.user) {
-		return {
-			created: false,
-			userId: existing.user.id,
-			email: existing.user.email,
-		};
-	}
+  const existing = await ctx.internalAdapter.findUserByEmail(normalizedEmail);
+  if (existing?.user) {
+    return {
+      created: false,
+      userId: existing.user.id,
+      email: existing.user.email,
+    };
+  }
 
-	// sign-up エンドポイントと同じ順序: 先にハッシュ、その後に user / account を作る
-	const hash = await ctx.password.hash(password);
-	const user = await ctx.internalAdapter.createUser(
-		{ email: normalizedEmail, name, emailVerified: false },
-		{ method: "email-password" },
-	);
-	await ctx.internalAdapter.linkAccount({
-		userId: user.id,
-		providerId: "credential",
-		issuer: createLocalAccountIssuer("credential"),
-		accountId: user.id,
-		password: hash,
-	});
+  // sign-up エンドポイントと同じ順序: 先にハッシュ、その後に user / account を作る
+  const hash = await ctx.password.hash(password);
+  const user = await ctx.internalAdapter.createUser(
+    { email: normalizedEmail, name, emailVerified: false },
+    { method: "email-password" },
+  );
+  await ctx.internalAdapter.linkAccount({
+    userId: user.id,
+    providerId: "credential",
+    issuer: createLocalAccountIssuer("credential"),
+    accountId: user.id,
+    password: hash,
+  });
 
-	return { created: true, userId: user.id, email: user.email };
+  return { created: true, userId: user.id, email: user.email };
 }

@@ -1,17 +1,12 @@
 {
-	"compilerOptions": {
-		"strict": true,
-		"esModuleInterop": true,
-		"jsx": "react-jsx",
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"skipLibCheck": true,
-		"types": ["vite/client"],
-		"rootDirs": ["."],
-		"paths": {
-			"@/*": ["./src/*"],
-			"@Onyx/ui/*": ["../../packages/ui/src/*"]
-		}
-	}
+  "extends": "../../tsconfig.json",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", ".output", ".wrangler"],
+  "compilerOptions": {
+    "types": ["vite/client", "vite-plugin-pwa/client"],
+    "paths": {
+      "#/*": ["./src/*"],
+      "@/*": ["./src/*"]
+    }
+  }
 }

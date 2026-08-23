@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onyx-web",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true,
+  },
+  // 静的アセット(dist/client)の配信設定。ディレクトリは Vite プラグインが注入する。
+  // HTML は SSR で生成するので Workers Assets 側の .html 補完は無効にする
+  // (既定の auto-trailing-slash だと Service Worker がプリキャッシュする
+  //  /offline.html が 307 /offline にリダイレクトされてしまう)。
+  "assets": {
+    "binding": "ASSETS",
+    "html_handling": "none",
+    // ★重要: vault バンドルと添付は「ログインしている人だけ」が読めるものなので、
+    // Assets が Worker より先に返してしまわないよう Worker を先に走らせる。
+    // 実際の配信は src/routes/vault/$.ts と src/routes/files/$.ts が
+    // セッションを確認したうえで env.ASSETS.fetch() で行う。
+    "run_worker_first": ["/vault/*", "/files/*"],
+  },
+  "vars": {
+    // better-auth のベース URL。ローカル開発では .dev.vars の値が優先される。
+    // シークレット(BETTER_AUTH_SECRET)はここではなく wrangler secret put で設定する。
+    "BETTER_AUTH_URL": "https://onyx-web.workers.dev",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onyx-db",
+      // `bunx wrangler d1 create onyx-db` の出力で置換すること。
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      // マイグレーション SQL は packages/db が drizzle-kit で生成する(スキーマと同居)。
+      // ローカル: bunx wrangler d1 migrations apply onyx-db --local
+      // 本番:   bunx wrangler d1 migrations apply onyx-db --remote
+      "migrations_dir": "../../packages/db/migrations",
+    },
+  ],
+}

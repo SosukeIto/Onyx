@@ -1,8 +1,8 @@
 import type { ReactNode, SVGProps } from "react";
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
-	/** width / height in px. Rail 22 / header 20 / panel 16 / tree 15 / meta 14. */
-	size?: number | string;
+  /** width / height in px. Rail 22 / header 20 / panel 16 / tree 15 / meta 14. */
+  size?: number | string;
 }
 
 /**
@@ -11,29 +11,29 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
  * `aria-label` when the icon itself carries the meaning.
  */
 export function IconBase({
-	size = 20,
-	strokeWidth = 1.75,
-	className,
-	children,
-	...props
+  size = 20,
+  strokeWidth = 1.75,
+  className,
+  children,
+  ...props
 }: IconProps & { children: ReactNode }) {
-	return (
-		<svg
-			aria-hidden="true"
-			className={className}
-			fill="none"
-			focusable="false"
-			height={size}
-			stroke="currentColor"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			strokeWidth={strokeWidth}
-			viewBox="0 0 24 24"
-			width={size}
-			xmlns="http://www.w3.org/2000/svg"
-			{...props}
-		>
-			{children}
-		</svg>
-	);
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      focusable="false"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={strokeWidth}
+      viewBox="0 0 24 24"
+      width={size}
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      {children}
+    </svg>
+  );
 }

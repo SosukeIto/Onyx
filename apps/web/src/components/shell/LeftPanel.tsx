@@ -1,38 +1,33 @@
 import type { TreeFolder } from "@Onyx/vault";
 import type { ReactNode } from "react";
 
-import {
-	IconFolder,
-	IconNewNote,
-	IconSearch,
-	IconSliders,
-} from "@/components/icons";
+import { IconFolder, IconNewNote, IconSearch, IconSliders } from "@/components/icons";
 
 import { FileTree } from "./FileTree";
 import { IconButton } from "./IconButton";
 
 export interface LeftPanelProps {
-	tree?: TreeFolder;
-	activePath?: string;
-	onOpen?: (path: string) => void;
-	/** Opens the search screen. Rendered as an icon button, never a text field. */
-	onSearch?: () => void;
-	/**
-	 * Creates a note. Onyx is a read-only viewer, so the button only exists
-	 * when a handler is passed — otherwise nothing is rendered for it.
-	 */
-	onNewNote?: () => void;
-	/**
-	 * Opens the settings screen. Phone only: from `sm` up the rail carries the
-	 * same target, and the drawer is where a phone reaches everything the tab
-	 * bar has no room for. Nothing is rendered without a handler.
-	 */
-	onSettings?: () => void;
-	/** Total note count shown next to the folder glyph. */
-	noteCount?: number;
-	defaultOpen?: readonly string[];
-	/** Slot above the tree — the daily-note calendar goes here. */
-	children?: ReactNode;
+  tree?: TreeFolder;
+  activePath?: string;
+  onOpen?: (path: string) => void;
+  /** Opens the search screen. Rendered as an icon button, never a text field. */
+  onSearch?: () => void;
+  /**
+   * Creates a note. Onyx is a read-only viewer, so the button only exists
+   * when a handler is passed — otherwise nothing is rendered for it.
+   */
+  onNewNote?: () => void;
+  /**
+   * Opens the settings screen. Phone only: from `sm` up the rail carries the
+   * same target, and the drawer is where a phone reaches everything the tab
+   * bar has no room for. Nothing is rendered without a handler.
+   */
+  onSettings?: () => void;
+  /** Total note count shown next to the folder glyph. */
+  noteCount?: number;
+  defaultOpen?: readonly string[];
+  /** Slot above the tree — the daily-note calendar goes here. */
+  children?: ReactNode;
 }
 
 /**
@@ -40,80 +35,63 @@ export interface LeftPanelProps {
  * panel are folder and file names.
  */
 export function LeftPanel({
-	tree,
-	activePath,
-	onOpen,
-	onSearch,
-	onNewNote,
-	onSettings,
-	noteCount,
-	defaultOpen,
-	children,
+  tree,
+  activePath,
+  onOpen,
+  onSearch,
+  onNewNote,
+  onSettings,
+  noteCount,
+  defaultOpen,
+  children,
 }: LeftPanelProps) {
-	return (
-		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
-			<div className="flex flex-none items-center gap-1 px-2 pt-2 pb-1.5">
-				<IconButton
-					className="size-8"
-					label="vault 内を検索"
-					onClick={onSearch}
-					title="vault 内を検索"
-				>
-					<IconSearch size={18} />
-				</IconButton>
-				<span aria-hidden="true" className="flex-1" />
-				{onNewNote ? (
-					<IconButton
-						className="size-8"
-						label="新規ノート"
-						onClick={onNewNote}
-						title="新規ノート"
-					>
-						<IconNewNote size={18} />
-					</IconButton>
-				) : null}
-				{onSettings ? (
-					<IconButton
-						className="size-8 sm:hidden"
-						label="設定"
-						onClick={onSettings}
-						title="設定"
-					>
-						<IconSliders size={18} />
-					</IconButton>
-				) : null}
-			</div>
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex flex-none items-center gap-1 px-2 pt-2 pb-1.5">
+        <IconButton
+          className="size-8"
+          label="vault 内を検索"
+          onClick={onSearch}
+          title="vault 内を検索"
+        >
+          <IconSearch size={18} />
+        </IconButton>
+        <span aria-hidden="true" className="flex-1" />
+        {onNewNote ? (
+          <IconButton className="size-8" label="新規ノート" onClick={onNewNote} title="新規ノート">
+            <IconNewNote size={18} />
+          </IconButton>
+        ) : null}
+        {onSettings ? (
+          <IconButton className="size-8 sm:hidden" label="設定" onClick={onSettings} title="設定">
+            <IconSliders size={18} />
+          </IconButton>
+        ) : null}
+      </div>
 
-			{/*
-			 * Calendar / facets / graph controls / project list. The rule below
-			 * the slot separates it from the tree; `:not(:empty)` keeps it off
-			 * the screens that put nothing here.
-			 */}
-			<div className="flex min-h-0 min-w-0 shrink flex-col [&>*:not(:empty)]:border-line [&>*:not(:empty)]:border-b">
-				{children}
-			</div>
+      {/*
+       * Calendar / facets / graph controls / project list. The rule below
+       * the slot separates it from the tree; `:not(:empty)` keeps it off
+       * the screens that put nothing here.
+       */}
+      <div className="flex min-h-0 min-w-0 shrink flex-col [&>*:not(:empty)]:border-line [&>*:not(:empty)]:border-b">
+        {children}
+      </div>
 
-			<div
-				className="flex h-[34px] flex-none items-center gap-2 px-3 text-ink-muted"
-				title="ファイル"
-			>
-				<IconFolder size={16} strokeWidth={1.6} />
-				<span className="sr-only">ファイル</span>
-				{noteCount === undefined ? null : (
-					<span className="ml-auto text-ink-muted text-micro tabular-nums">
-						{noteCount}
-					</span>
-				)}
-			</div>
+      <div
+        className="flex h-[34px] flex-none items-center gap-2 px-3 text-ink-muted"
+        title="ファイル"
+      >
+        <IconFolder size={16} strokeWidth={1.6} />
+        <span className="sr-only">ファイル</span>
+        {noteCount === undefined ? null : (
+          <span className="ml-auto text-ink-muted text-micro tabular-nums">{noteCount}</span>
+        )}
+      </div>
 
-			<div className="onyx-scroll min-h-0 min-w-0 flex-1">
-				<FileTree
-					activePath={activePath}
-					defaultOpen={defaultOpen}
-					onOpen={onOpen}
-					tree={tree}
-				/>
-			</div>
-		</div>
-	);
+      <div className="onyx-scroll min-h-0 min-w-0 flex-1">
+        <FileTree activePath={activePath} defaultOpen={defaultOpen} onOpen={onOpen} tree={tree} />
+      </div>
+    </div>
+  );
 }

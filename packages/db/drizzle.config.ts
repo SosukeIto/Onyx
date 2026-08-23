@@ -12,9 +12,9 @@ import { defineConfig } from "drizzle-kit";
  * drizzle-kit は SQL 生成専用として使う。
  */
 export default defineConfig({
-	dialect: "sqlite",
-	schema: "./src/schema/index.ts",
-	out: "./migrations",
-	strict: true,
-	verbose: true,
+  dialect: "sqlite",
+  schema: "./src/schema/index.ts",
+  out: "./migrations",
+  strict: true,
+  verbose: true,
 });

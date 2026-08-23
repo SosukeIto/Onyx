@@ -1,9 +1,9 @@
 import { IconBase, type IconProps } from "./base";
 
 export function IconPlus(props: IconProps) {
-	return (
-		<IconBase {...props}>
-			<path d="M12 5.5v13M5.5 12h13" />
-		</IconBase>
-	);
+  return (
+    <IconBase {...props}>
+      <path d="M12 5.5v13M5.5 12h13" />
+    </IconBase>
+  );
 }

@@ -1,0 +1,7 @@
+# apps/web/.dev.vars のテンプレート。コピーして値を埋める:
+#   cp .dev.vars.example .dev.vars
+# シークレットの生成: openssl rand -base64 32
+BETTER_AUTH_SECRET="replace-me-with-openssl-rand-base64-32"
+
+# ローカル開発時のベース URL(wrangler.jsonc の vars を上書きする)
+BETTER_AUTH_URL="http://localhost:3000"

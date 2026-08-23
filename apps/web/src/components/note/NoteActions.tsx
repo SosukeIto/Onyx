@@ -3,13 +3,13 @@ import { IconButton } from "@/components/shell";
 import { cx } from "@/lib/cx";
 
 export interface NoteActionsProps {
-	/**
-	 * Opens the local graph centred on the note being read
-	 * (`/graph?center=<path>`). Nothing renders without a handler.
-	 */
-	onOpenGraph?: () => void;
-	/** Spacing is the caller's — pass `mb-4` / `mb-5` to match its header. */
-	className?: string;
+  /**
+   * Opens the local graph centred on the note being read
+   * (`/graph?center=<path>`). Nothing renders without a handler.
+   */
+  onOpenGraph?: () => void;
+  /** Spacing is the caller's — pass `mb-4` / `mb-5` to match its header. */
+  className?: string;
 }
 
 /**
@@ -21,20 +21,18 @@ export interface NoteActionsProps {
  * reading column, where every device reaches it without opening anything.
  */
 export function NoteActions({ onOpenGraph, className }: NoteActionsProps) {
-	if (!onOpenGraph) {
-		return null;
-	}
-	return (
-		<div
-			className={cx("flex min-w-0 items-center justify-end gap-0.5", className)}
-		>
-			<IconButton
-				label="このノートのローカルグラフを開く"
-				onClick={onOpenGraph}
-				title="このノートのローカルグラフを開く"
-			>
-				<IconGraph size={18} strokeWidth={1.6} />
-			</IconButton>
-		</div>
-	);
+  if (!onOpenGraph) {
+    return null;
+  }
+  return (
+    <div className={cx("flex min-w-0 items-center justify-end gap-0.5", className)}>
+      <IconButton
+        label="このノートのローカルグラフを開く"
+        onClick={onOpenGraph}
+        title="このノートのローカルグラフを開く"
+      >
+        <IconGraph size={18} strokeWidth={1.6} />
+      </IconButton>
+    </div>
+  );
 }

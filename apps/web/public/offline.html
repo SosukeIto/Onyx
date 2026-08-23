@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#17181c" />
+    <title>Onyx</title>
+    <style>
+      :root {
+        color-scheme: dark light;
+        --bg: #17181c;
+        --fg: #7b7f8a;
+        --line: #2b2d34;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --fg: #93939c;
+          --line: #e4e4e7;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        background-color: var(--bg);
+        color: var(--fg);
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        color: inherit;
+        border-color: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 文字は出さない: 切れているという事実はアイコンで足りる -->
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      role="img"
+      aria-label="オフライン"
+    >
+      <path d="M12 2.4 20.6 7v10L12 21.6 3.4 17V7z" />
+      <path d="M3.4 7 12 11.6 20.6 7M12 11.6v10" />
+      <path d="M3 3l18 18" />
+    </svg>
+    <button type="button" aria-label="再読み込み" title="再読み込み" onclick="location.reload()">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M20 11a8 8 0 1 0-.7 4.3" />
+        <path d="M20 5v6h-6" />
+      </svg>
+    </button>
+  </body>
+</html>

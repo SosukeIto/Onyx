@@ -12,7 +12,7 @@ import { createAuth } from "./index";
  * **実行時にこのファイルを import してはいけない。** アプリからは `createAuth()` を使うこと。
  */
 export const auth = createAuth({
-	d1: undefined as unknown as D1Database,
-	secret: "cli-only-placeholder-secret-not-used-at-runtime",
-	baseURL: "http://localhost:3000",
+  d1: undefined as unknown as D1Database,
+  secret: "cli-only-placeholder-secret-not-used-at-runtime",
+  baseURL: "http://localhost:3000",
 });

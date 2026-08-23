@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="onyx-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#23252c"/>
+      <stop offset="1" stop-color="#17181c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#onyx-tile)"/>
+  <g transform="translate(256 256) scale(13.2) translate(-12 -12)"
+     fill="none" stroke="#6e9bff" stroke-width="1.4"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2.4 20.6 7v10L12 21.6 3.4 17V7z"/>
+    <path d="M3.4 7 12 11.6 20.6 7M12 11.6v10"/>
+  </g>
+</svg>

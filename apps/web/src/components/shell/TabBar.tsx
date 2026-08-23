@@ -11,33 +11,33 @@ import { NAV_PHONE, type NavProps } from "./nav";
  * comfortable hit size. `settings` is therefore not here; see `nav.ts`.
  */
 export function TabBar({
-	active,
-	onSelect,
-	hrefs,
-	items = NAV_PHONE,
-	renderItem,
-	className,
+  active,
+  onSelect,
+  hrefs,
+  items = NAV_PHONE,
+  renderItem,
+  className,
 }: NavProps) {
-	return (
-		<nav
-			aria-label="画面切り替え"
-			className={cx(
-				"z-20 flex flex-none items-stretch justify-around gap-0 border-line border-t bg-panel px-1 pb-[env(safe-area-inset-bottom)] sm:hidden",
-				className,
-			)}
-		>
-			{items.map((key) => (
-				<NavButton
-					active={active === key}
-					className="min-h-[52px] w-auto max-w-[110px] flex-1 rounded-none"
-					href={hrefs?.[key]}
-					iconSize={22}
-					key={key}
-					navKey={key}
-					onSelect={() => onSelect?.(key)}
-					renderItem={renderItem}
-				/>
-			))}
-		</nav>
-	);
+  return (
+    <nav
+      aria-label="画面切り替え"
+      className={cx(
+        "z-20 flex flex-none items-stretch justify-around gap-0 border-line border-t bg-panel px-1 pb-[env(safe-area-inset-bottom)] sm:hidden",
+        className,
+      )}
+    >
+      {items.map((key) => (
+        <NavButton
+          active={active === key}
+          className="min-h-[52px] w-auto max-w-[110px] flex-1 rounded-none"
+          href={hrefs?.[key]}
+          iconSize={22}
+          key={key}
+          navKey={key}
+          onSelect={() => onSelect?.(key)}
+          renderItem={renderItem}
+        />
+      ))}
+    </nav>
+  );
 }

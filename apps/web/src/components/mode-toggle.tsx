@@ -9,17 +9,17 @@ import { useTheme } from "@/components/theme-provider";
  * hydration flash and no client-only state.
  */
 export function ModeToggle() {
-	const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
-	return (
-		<Tooltip align="end" label="テーマ切替">
-			<IconButton
-				label="ライト / ダークテーマを切り替え"
-				onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-			>
-				<IconMoon className="dark:hidden" size={20} />
-				<IconSun className="hidden dark:block" size={20} />
-			</IconButton>
-		</Tooltip>
-	);
+  return (
+    <Tooltip align="end" label="テーマ切替">
+      <IconButton
+        label="ライト / ダークテーマを切り替え"
+        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      >
+        <IconMoon className="dark:hidden" size={20} />
+        <IconSun className="hidden dark:block" size={20} />
+      </IconButton>
+    </Tooltip>
+  );
 }

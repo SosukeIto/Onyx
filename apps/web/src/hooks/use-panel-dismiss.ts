@@ -16,29 +16,29 @@ const PHONE = "(max-width: 639px)";
 const BELOW_DESKTOP = "(max-width: 1023px)";
 
 function matches(query: string): boolean {
-	try {
-		return window.matchMedia(query).matches;
-	} catch {
-		return false;
-	}
+  try {
+    return window.matchMedia(query).matches;
+  } catch {
+    return false;
+  }
 }
 
 /** Closes the left drawer on phones; a no-op on tablet and desktop. */
 export function useCloseLeftDrawer(): () => void {
-	const { setLeftOpen } = useAppShell();
-	return useCallback(() => {
-		if (matches(PHONE)) {
-			setLeftOpen(false);
-		}
-	}, [setLeftOpen]);
+  const { setLeftOpen } = useAppShell();
+  return useCallback(() => {
+    if (matches(PHONE)) {
+      setLeftOpen(false);
+    }
+  }, [setLeftOpen]);
 }
 
 /** Closes the right overlay below desktop; a no-op on desktop. */
 export function useCloseRightOverlay(): () => void {
-	const { setRightOpen } = useAppShell();
-	return useCallback(() => {
-		if (matches(BELOW_DESKTOP)) {
-			setRightOpen(false);
-		}
-	}, [setRightOpen]);
+  const { setRightOpen } = useAppShell();
+  return useCallback(() => {
+    if (matches(BELOW_DESKTOP)) {
+      setRightOpen(false);
+    }
+  }, [setRightOpen]);
 }

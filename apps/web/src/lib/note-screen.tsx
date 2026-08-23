@@ -1,4 +1,4 @@
-import type { NoteDetail } from "@Onyx/api/schemas";
+import type { NotePayload } from "@/server/vault";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
@@ -7,9 +7,9 @@ import { NoteActions, NoteView } from "@/components/note";
 import { stripMd } from "./paths";
 
 export interface NoteScreenProps {
-	detail: NoteDetail;
-	/** Slot above the property block — the daily note puts its arrows there. */
-	header?: ReactNode;
+  detail: NotePayload;
+  /** Slot above the property block — the daily note puts its arrows there. */
+  header?: ReactNode;
 }
 
 /**
@@ -22,76 +22,76 @@ export interface NoteScreenProps {
  * below picks those up on the way out of the article.
  */
 export function NoteScreen({ detail, header }: NoteScreenProps) {
-	const navigate = useNavigate();
-	const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const ref = useRef<HTMLDivElement>(null);
 
-	const openNote = useCallback(
-		(path: string) => {
-			void navigate({ params: { _splat: stripMd(path) }, to: "/note/$" });
-		},
-		[navigate],
-	);
+  const openNote = useCallback(
+    (path: string) => {
+      void navigate({ params: { _splat: stripMd(path) }, to: "/note/$" });
+    },
+    [navigate],
+  );
 
-	const openTag = useCallback(
-		(tag: string) => {
-			void navigate({ params: { tag }, to: "/tags/$tag" });
-		},
-		[navigate],
-	);
+  const openTag = useCallback(
+    (tag: string) => {
+      void navigate({ params: { tag }, to: "/tags/$tag" });
+    },
+    [navigate],
+  );
 
-	useEffect(() => {
-		const root = ref.current;
-		if (!root) {
-			return;
-		}
-		function onClick(event: MouseEvent) {
-			if (
-				event.defaultPrevented ||
-				event.button !== 0 ||
-				event.metaKey ||
-				event.ctrlKey ||
-				event.shiftKey ||
-				event.altKey
-			) {
-				return;
-			}
-			const target = event.target;
-			if (!(target instanceof Element)) {
-				return;
-			}
-			if (!target.closest("a.wikilink.unresolved")) {
-				return;
-			}
-			event.preventDefault();
-			void navigate({ to: "/unresolved" });
-		}
-		root.addEventListener("click", onClick);
-		return () => root.removeEventListener("click", onClick);
-	}, [navigate]);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) {
+      return;
+    }
+    function onClick(event: MouseEvent) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (!target.closest("a.wikilink.unresolved")) {
+        return;
+      }
+      event.preventDefault();
+      void navigate({ to: "/unresolved" });
+    }
+    root.addEventListener("click", onClick);
+    return () => root.removeEventListener("click", onClick);
+  }, [navigate]);
 
-	return (
-		// `display: contents` keeps the shell's flex layout exactly as designed.
-		<div className="contents" ref={ref}>
-			<NoteView
-				frontmatter={detail.frontmatter}
-				header={
-					<>
-						<NoteActions
-							className="mb-4"
-							onOpenGraph={() => {
-								void navigate({
-									search: { center: detail.path },
-									to: "/graph",
-								});
-							}}
-						/>
-						{header}
-					</>
-				}
-				html={detail.html}
-				onLinkClick={openNote}
-				onTagClick={openTag}
-			/>
-		</div>
-	);
+  return (
+    // `display: contents` keeps the shell's flex layout exactly as designed.
+    <div className="contents" ref={ref}>
+      <NoteView
+        frontmatter={detail.frontmatter}
+        header={
+          <>
+            <NoteActions
+              className="mb-4"
+              onOpenGraph={() => {
+                void navigate({
+                  search: { center: detail.path },
+                  to: "/graph",
+                });
+              }}
+            />
+            {header}
+          </>
+        }
+        html={detail.html}
+        onLinkClick={openNote}
+        onTagClick={openTag}
+      />
+    </div>
+  );
 }
