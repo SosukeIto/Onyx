@@ -134,6 +134,15 @@
         "typescript": "catalog:",
       },
     },
+    "packages/vault": {
+      "name": "@Onyx/vault",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@Onyx/config": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
   },
   "catalog": {
     "@orpc/client": "^1.14.12",
@@ -162,6 +171,8 @@
     "@Onyx/env": ["@Onyx/env@workspace:packages/env"],
 
     "@Onyx/ui": ["@Onyx/ui@workspace:packages/ui"],
+
+    "@Onyx/vault": ["@Onyx/vault@workspace:packages/vault"],
 
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
