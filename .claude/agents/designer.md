@@ -26,6 +26,13 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 8. **アイコンは 1 ストローク幅で統一**(24px グリッド、stroke 1.5〜1.75、`currentColor`)
 9. **UI テキストは原則ゼロ(ユーザー指示: 2026-08-23)**: ユーザーが読む文字はノート本文(md の内容)だけが理想。パネル見出し・ボタンラベル・プレースホルダ・ステータス文言・frontmatter のキー名などの UI テキストは削除し、SVG アイコン + tooltip(`title` / `aria-label`)に置き換える。残してよい文字は「ノート本文と frontmatter の値」「ファイル名・フォルダ名(ツリー、パンくず、検索結果、バックリンク)」「検索スニペット」「日付や件数の数字」「設定画面など代替不能なもの」のみ。同じ概念には必ず同じアイコンを使い、アイコン語彙は `apps/web/src/components/icons/README.md` に一覧化する
 
+## 検証のルール(ユーザー指示: 2026-08-23)
+
+- **スクリーンショットを撮って見ながら修正するやり方は禁止**(headless Chrome の `--screenshot` と画像の Read を繰り返すループは行わない。時間とトークンを大量に消費するため)
+- 見た目の正しさは **コードで保証する**: grid の `minmax(0, 1fr)`、本文カラムの `min-width: 0`、`overflow-wrap: anywhere`、`pre` / `table` の `overflow-x: auto` など、横はみ出しが構造的に起きない書き方をする
+- 計測が必要なら **DOM 計測スクリプトを 1 回だけ**(iframe で指定幅にして `scrollWidth <= clientWidth` と `getBoundingClientRect().right > innerWidth` の要素数を数値で出す)。画像は生成しない
+- 最終的な目視確認はオーケストレーターが受け入れ時に 1 回行う。designer はそれを待たずに報告を返す
+
 ## 成果物のルール
 
 - HTML モックは単一ファイルで自己完結(CSS/JS インライン)。外部読み込みは Google Fonts のみ可。ダミー画像はインライン SVG で代用する
